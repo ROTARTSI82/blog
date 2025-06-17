@@ -1,0 +1,11 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import {calcBlogIndex, BlogIndex} from "../../blog-util";
+
+const { paths } = await calcBlogIndex();
+---
+
+<Layout title="Blog: /">
+    <code>0 /</code>
+    <BlogIndex post={paths} isRoot={true} />
+</Layout>

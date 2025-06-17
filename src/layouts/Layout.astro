@@ -1,3 +1,13 @@
+---
+import '../styles/global.css';
+import {link} from "../blog-util";
+
+interface Props {
+	title: string
+}
+
+const { title } = Astro.props;
+---
 <!doctype html>
 <html lang="en">
 	<head>
@@ -5,14 +15,30 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<slot name="in-head" />
+		<title>{title}</title>
 	</head>
 	<body>
-		<slot />
+		<div id="navbar">
+			<a href={link("/")}>Home</a>
+			<a href={link("/blog/")}>Blog</a>
+		</div>
+		<div class="p-3 m-auto w-10/12">
+			<slot />
+		</div>
 	</body>
 </html>
 
 <style>
+	@reference "tailwindcss";
+
+	#navbar {
+		@apply p-3 pl-4 w-full flex bg-purple-300 font-mono;
+		a {
+			@apply mr-8 no-underline text-black;
+		}
+	}
+
 	html,
 	body {
 		margin: 0;

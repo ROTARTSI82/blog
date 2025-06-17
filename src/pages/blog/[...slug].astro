@@ -1,0 +1,63 @@
+---
+import "katex/dist/katex.min.css";
+import "katex/dist/contrib/mhchem.min.js";
+
+import { type CollectionEntry, render } from 'astro:content';
+import Layout from "../../layouts/Layout.astro";
+import {calcBlogIndex, BlogIndex } from "../../blog-util";
+
+interface MDProps {
+  post: any;
+  leaf: string;
+}
+
+export async function getStaticPaths() {
+  const { fulls, partials, paths } = await calcBlogIndex();
+
+  function resolve(path: string, dict: any) {
+    if (path.length == 0)
+      return dict;
+    let cursor: any = dict;
+    for (const part of path.split('/'))
+      cursor = cursor[part];
+    return cursor;
+  }
+
+  return fulls.union(partials).keys().map(str => {
+    const post = resolve(str, paths);
+    return {
+      params: { slug: str },
+      props: { post, leaf: fulls.has(str) ? '1' : '0' }
+    }
+  }).toArray();
+}
+
+type Props = CollectionEntry<'blog'>;
+const { post, leaf } = Astro.props as MDProps;
+const { slug } = Astro.params;
+const { Content } = await render(post);
+
+const opt: Intl.DateTimeFormatOptions = {year: 'numeric', month: 'short', day: '2-digit'};
+---
+
+<Layout title={leaf === '1' ? post.data.title : `Blog: ${slug}/`}>
+  <code>{leaf} {slug}{leaf == '0' ? '/' : ''}</code>
+  {leaf === '1' ? (<>
+      <div class="m-auto text-center">
+        <h1>{post.data.title}</h1>
+        <span class="byline">{post.data.created.toLocaleDateString(undefined, opt)}</span>
+      </div>
+      <Content/>
+  </>) : <BlogIndex post={post}/>}
+
+  <style>
+    @reference "tailwindcss";
+
+    .byline {
+      @apply italic;
+    }
+  </style>
+</Layout>
+
+
+

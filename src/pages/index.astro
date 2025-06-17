@@ -1,11 +1,19 @@
 ---
 import Welcome from '../components/Welcome.astro';
+import { link } from "../blog-util";
 import Layout from '../layouts/Layout.astro';
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Home Page">
+	<h1>Grant's Blog</h1>
+	<p>
+		Hi, this will be my new website. Check out my <a href={link("blog/")}>blog</a>.
+	</p>
+
+	<p>
+		Github: <a href="https://github.com/ROTARTSI82">ROTARTSI82</a>
+	</p>
 </Layout>
