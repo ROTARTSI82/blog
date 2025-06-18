@@ -232,6 +232,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \draw (A) node[anchor=west] {A};
 \end{circuitikz}
+\end{document}
 </div>
 
 | $A$ | out = $A$ |
@@ -246,6 +247,7 @@ Substituting this into the original expression, we obtain the full problem.
 \begin{circuitikz}
 \draw (0, 0) node[buffer port] (AND) {};
 \end{circuitikz}
+\end{document}
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -261,6 +263,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \draw (A) node[anchor=west] {B} (B) node[anchor=west] {A};
 \end{circuitikz}
+\end{document}
 </div>
 
 
@@ -277,6 +280,7 @@ Substituting this into the original expression, we obtain the full problem.
 \begin{circuitikz}
 \draw (0, 0) node[and port] (AND) {};
 \end{circuitikz}
+\end{document}
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -296,7 +300,6 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (-1, 3) to (0, 3);
 \draw (0, 3) to (0, 4) node[vcc] {5 V};
 \draw (A) node[anchor=west] {A} (B) node[anchor=west] {B};
-%% \draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
 \end{document}
@@ -315,6 +318,7 @@ Substituting this into the original expression, we obtain the full problem.
 \begin{circuitikz}
 \draw (0, 0) node[or port] (AND) {};
 \end{circuitikz}
+\end{document}
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -358,8 +362,8 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[cute open switch,name=A] (0, -2) to[cute open switch,name=B] (0, -4.5) node[ground,anchor=south] {};
 \draw (0, 0) to[R] (0, 2) node[vcc] {5 V};
 \draw (A) node[anchor=east] {A} (B) node[anchor=east] {B};
-%% recomp
 \end{circuitikz}
+\end{document}
 </div>
 
 
@@ -376,6 +380,7 @@ Substituting this into the original expression, we obtain the full problem.
 \begin{circuitikz}
 \draw (0, 0) node[nand port] (AND) {};
 \end{circuitikz}
+\end{document}
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -394,12 +399,10 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (1, -3) to (0, -3);
 \draw (-1, -3) to (0, -3);
 \draw (0, -3) to (0, -4) node[ground] {};
-
 \draw (A) node[anchor=east] {A} (B) node[anchor=east] {B};
-
-%% \draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, 2) node[vcc] {5 V};
 \end{circuitikz}
+\end{document}
 </div>
 
 | $A$ | $B$ | out = $\overline{A+B}$ |
@@ -415,6 +418,7 @@ Substituting this into the original expression, we obtain the full problem.
 \begin{circuitikz}
 \draw (0, 0) node[nor port] (AND) {};
 \end{circuitikz}
+\end{document}
 </div>
 
 <div style="page-break-after: always;"></div>
@@ -434,10 +438,9 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (-1, 3) to (0, 3);
 \draw (0, 3) to[cute open switch,name=A] (0, 5) node[vcc] {5 V};
 \draw (A) node[anchor=west] {A} (B) node[anchor=west] {C} (C) node[anchor=west] {B};
-
-%% \draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
+\end{document}
 </div>
 
 | $A$ | $B$ | $C$ | out = $A(B+C)$ |
@@ -468,10 +471,9 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (-1, 5) to (0, 5);
 \draw (0, 5) to (0, 6) node[vcc] {5 V};
 \draw (A) node[anchor=west] {A} (B) node[anchor=west] {C} (C) node[anchor=west] {B};
-
-%%\draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
+\end{document}
 </div>
 
 | $A$ | $B$ | $C$ | out = $A+BC$ |

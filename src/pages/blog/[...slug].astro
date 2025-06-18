@@ -47,7 +47,7 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
   <link slot="in-head" rel="stylesheet" type="text/css" href="http://tikzjax.com/v1/fonts.css" />
   <!--<script slot="in-head" src="https://tikzjax.com/v1/tikzjax.js" />-->
   <script slot="in-head" src={link("/preprocess-tikz.js")}/>
-  <script slot="in-head" src={link("/tikzjax.js")}/>
+  <script fetchpriority="low" async slot="in-head" src={link("/tikzjax.js")}/>
 
   <code>{leaf} {slug}{leaf == '0' ? '/' : ''}</code>
   {leaf === '1' ? <>
