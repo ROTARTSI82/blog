@@ -3,18 +3,26 @@ import '../styles/global.css';
 import {link} from "../blog-util";
 
 interface Props {
-	title: string
+	title: string,
+	ogtype?: string
 }
 
-const { title } = Astro.props;
+const { title, ogtype } = Astro.props;
+import favicon from "../assets/favicon.ico";
+
 ---
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/ico" href={favicon} />
 		<meta name="generator" content={Astro.generator} />
+		<meta property="og:site_name" content="Grant's Site" />
+		<meta property="og:title" content={title} />
+		<meta property="og:author" content="Grant Yang" />
+		<meta property="og:url" content={Astro.url} />
+		<meta property="og:type" content={ogtype ?? "website"} />
 		<slot name="in-head" />
 		<title>{title}</title>
 	</head>

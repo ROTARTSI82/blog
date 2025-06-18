@@ -1,10 +1,11 @@
 ---
 import "katex/dist/katex.min.css";
 import "katex/dist/contrib/mhchem.min.js";
+import "../../styles/blogs.css";
 
 import { type CollectionEntry, render } from 'astro:content';
 import Layout from "../../layouts/Layout.astro";
-import {calcBlogIndex, BlogIndex } from "../../blog-util";
+import { calcBlogIndex, BlogIndex, link } from "../../blog-util";
 
 interface MDProps {
   post: any;
@@ -33,31 +34,32 @@ export async function getStaticPaths() {
 }
 
 type Props = CollectionEntry<'blog'>;
-const { post, leaf } = Astro.props as MDProps;
+let { post, leaf } = Astro.props as MDProps;
 const { slug } = Astro.params;
 const { Content } = await render(post);
 
 const opt: Intl.DateTimeFormatOptions = {year: 'numeric', month: 'short', day: '2-digit'};
+
+const date = post.data?.created?.toLocaleString(undefined, opt);
 ---
 
-<Layout title={leaf === '1' ? post.data.title : `Blog: ${slug}/`}>
+<Layout title={leaf === '1' ? post.data.title : `${slug}/ - Files`} ogtype="article">
+  <link slot="in-head" rel="stylesheet" type="text/css" href="http://tikzjax.com/v1/fonts.css" />
+  <!--<script slot="in-head" src="https://tikzjax.com/v1/tikzjax.js" />-->
+  <script slot="in-head" src={link("/preprocess-tikz.js")}/>
+  <script slot="in-head" src={link("/tikzjax.js")}/>
+
   <code>{leaf} {slug}{leaf == '0' ? '/' : ''}</code>
-  {leaf === '1' ? (<>
+  {leaf === '1' ? <>
+      <meta property="og:description" content={`${date} - ${post.data.subhead ?? "No description."}`} />
+      <meta property="og:published_time" content={post.data.created} />
+      <meta property="og:modified_time" content={post.data.modified} />
+
       <div class="m-auto text-center">
         <h1>{post.data.title}</h1>
-        <span class="byline">{post.data.created.toLocaleDateString(undefined, opt)}</span>
+        <span class="byline">{date}</span>
       </div>
       <Content/>
-  </>) : <BlogIndex post={post}/>}
-
-  <style>
-    @reference "tailwindcss";
-
-    .byline {
-      @apply italic;
-    }
-  </style>
+  </> : <BlogIndex post={post}/>}
 </Layout>
-
-
 

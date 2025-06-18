@@ -27,18 +27,22 @@ export async function calcBlogIndex() {
 }
 
 export function link(s: string) {
-  return s.startsWith('/') ? `/granty29/dist${s}` : s;
+  return s.startsWith('/') ? `/granty29${s}` : s;
 }
 
 export function BlogIndex(prop: any) {
+  let objects = Object.keys(prop.post)
+    .map(x => [(('id' in prop.post[x]) ? '1' : '0')+x, x])
+    .filter(l =>
+      !prop.post[l[1]].data?.tags?.split(',')?.includes('hide-dir'));
+
   return <>
+    <meta property="og:description" content={`Directory with ${objects.length} items.`} />
     <h3>Directory Contents</h3>
+
     <ul className="list-disc list-inside mt-2">
-      {Object.keys(prop.post).map(x => [(('id' in prop.post[x]) ? '1' : '0')+x, x])
-        .filter(l =>
-          !prop.post[l[1]].data?.tags?.split(',')?.includes('hide-dir')
-        ).sort().map(l =>
-        <li>
+      {objects.sort().map(l =>
+        <li key={l[0]}>
           <code className="mr-2">{l[0][0]}</code>
           <a href={link(prop.isRoot ? `/blog/${l[1]}/` : `${l[1]}/`)}>{l[1]}</a>
         </li>

@@ -423,9 +423,8 @@ const resetPhoto = () => {
 
 <template>
   <main id="camera-main">
-      <div slot="in-head">
+      <div>
         <title>Camera Simulator</title>
-        <link href="@/public/favicon.ico" rel="shortcut icon" type="image/ico"/>
         <meta content="Camera Simulator" property="og:title"/>
         <meta content="website" property="og:type"/>
         <meta content="A path tracing simulator for cameras [WIP]" property="og:description"/>
@@ -448,33 +447,33 @@ const resetPhoto = () => {
     </div>
 
     <div class="controls">
-      <label>ISO</label>
+      <label for="iso">ISO</label>
       <input type="range" v-model.number="iso" @input="resetPhoto()" min="0" max="2000"/>
-      <input type="number" v-model.number="iso" @input="resetPhoto()"/>
+      <input id="iso" type="number" v-model.number="iso" @input="resetPhoto()"/>
 
-      <label>Aperture (mm)</label>
+      <label for="apt">Aperture (mm)</label>
       <input type="range" :value="aperture.toFixed(20)" @input="setAperture" min="0" max="100"/>
-      <input type="number" :value="aperture.toFixed(2)" @input="setAperture"/>
+      <input id="apt" type="number" :value="aperture.toFixed(2)" @input="setAperture"/>
 
-      <label>Shutter Speed (1/sec)</label>
+      <label for="ss">Shutter Speed (1/sec)</label>
       <input type="range" v-model.number="shutterSpeed" @input="resetPhoto()" min="0" max="2000"/>
-      <input type="number" v-model.number="shutterSpeed" @input="resetPhoto()"/>
+      <input id="ss" type="number" v-model.number="shutterSpeed" @input="resetPhoto()"/>
 
-      <label>Focus (mm)</label>
+      <label for="focus">Focus (mm)</label>
       <input type="range" v-model.number="focalLength" @input="resetPhoto()" min="0" max="200"/>
-      <input type="number" v-model.number="focalLength" @input="resetPhoto()"/>
+      <input id="focus" type="number" v-model.number="focalLength" @input="resetPhoto()"/>
 
-      <label>Lens Focal Length (mm)</label>
+      <label for="foc-len">Lens Focal Length (mm)</label>
       <input type="range" :value="lensFocalLength.toFixed(2)" @input="setFocalLength" min="0" max="100"/>
-      <input type="number" :value="lensFocalLength.toFixed(2)" @input="setFocalLength"/>
+      <input id="foc-len" type="number" :value="lensFocalLength.toFixed(2)" @input="setFocalLength"/>
 
-      <label>F-stop</label>
+      <label for="fstop">F-stop</label>
       <input type="range" :value="fStop.toFixed(2)" @input="updateFStopBackwards" min="1" max="32"/>
-      <input type="number" :value="fStop.toFixed(2)" @input="updateFStopBackwards"/>
+      <input id="fstop" type="number" :value="fStop.toFixed(2)" @input="updateFStopBackwards"/>
 
-      <label>Sensor Height (mm)</label>
+      <label for="sensor">Sensor Height (mm)</label>
       <input type="range" v-model.number="sensorHeight" @input="resetPhoto()" min="1" max="100"/>
-      <input type="number" v-model.number="sensorHeight" @input="resetPhoto()"/>
+      <input id="sensor" type="number" v-model.number="sensorHeight" @input="resetPhoto()"/>
     </div>
 
     <!-- I might have to restart the render loop here too once-->

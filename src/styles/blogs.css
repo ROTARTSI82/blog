@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+.byline {
+    @apply italic;
+}
+
+.astro-code {
+    @apply m-2 p-3;
+}
+
+#table-of-contents + ul {
+    @apply ml-12 list-inside list-none p-0 mt-0;
+    ul {
+        @apply ml-4 list-inside list-none p-0 mt-0;
+    }
+}
+
+.blog-tikz-done > svg {
+    @apply m-auto;
+}

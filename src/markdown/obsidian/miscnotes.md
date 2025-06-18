@@ -1,6 +1,7 @@
 ---
 title: 'Miscellaneous Notes'
-created: "Jun 16 2024"
+created: "Jun 16 2025"
+tags: "hide-ls"
 ---
 ## Table of Contents
 <!-- toc -->
@@ -222,7 +223,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 
 ## Buffer
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -231,8 +232,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \draw (A) node[anchor=west] {A};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 | $A$ | out = $A$ |
 | -- | --|
@@ -240,20 +240,19 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 1 |
 
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[buffer port] (AND) {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ### AND
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -262,8 +261,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \draw (A) node[anchor=west] {B} (B) node[anchor=west] {A};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 
 | $A$ | $B$ | out = $AB$ |
@@ -273,20 +271,19 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 0 |
 | 1 | 1 | 1 |
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[and port] (AND) {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ### OR
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -303,7 +300,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
 \end{document}
-```
+</div>
 
 | $A$ | $B$ | out = $A+B$ |
 | -- | -- | -- |
@@ -312,20 +309,19 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 1 |
 | 1 | 1 | 1 |
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[or port] (AND) {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ## Inverter
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -335,27 +331,26 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (A) node[anchor=east] {A};
 \end{circuitikz}
 \end{document}
-%% test
-```
+</div>
 
 | $A$ | out = $\overline{A}$ |
 | -- | --|
 | 0 | 1 |
 | 1 | 0 |
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[not port] (AND) {};
 \end{circuitikz}
 \end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ### NAND
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -365,8 +360,7 @@ Substituting this into the original expression, we obtain the full problem.
 \draw (A) node[anchor=east] {A} (B) node[anchor=east] {B};
 %% recomp
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 
 | $A$ | $B$ | out = $\overline{AB}$ |
@@ -376,20 +370,19 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 1 |
 | 1 | 1 | 0 |
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[nand port] (AND) {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ### NOR
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -407,8 +400,7 @@ Substituting this into the original expression, we obtain the full problem.
 %% \draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, 2) node[vcc] {5 V};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 | $A$ | $B$ | out = $\overline{A+B}$ |
 | -- | -- | -- |
@@ -417,20 +409,19 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 0 |
 | 1 | 1 | 0 |
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}
 \draw (0, 0) node[nor port] (AND) {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 <div style="page-break-after: always;"></div>
 
 ## Curveball 1
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -447,8 +438,7 @@ Substituting this into the original expression, we obtain the full problem.
 %% \draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 | $A$ | $B$ | $C$ | out = $A(B+C)$ |
 | -- | -- | -- | -- |
@@ -465,7 +455,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ## Curveball 2
 
-```tikz
+<div class="blog-tikz">
 \usepackage{circuitikz}
 \begin{document}
 \begin{circuitikz}[american, voltage shift=0.5]
@@ -482,8 +472,7 @@ Substituting this into the original expression, we obtain the full problem.
 %%\draw to[cute open switch] (0, 4) node[vcc,anchor=south] {5 V};
 \draw (0, 0) to[R] (0, -2) node[ground] {};
 \end{circuitikz}
-\end{document}
-```
+</div>
 
 | $A$ | $B$ | $C$ | out = $A+BC$ |
 | -- | -- | -- | -- |

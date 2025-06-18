@@ -28,17 +28,6 @@ th {
     @apply font-bold bg-gray-200;
 }
 
-.astro-code {
-    @apply m-2 p-3;
-}
-
-#table-of-contents + ul {
-    @apply ml-12 list-inside list-none p-0 mt-0;
-    ul {
-        @apply ml-4 list-inside list-none p-0 mt-0;
-    }
-}
-
 ul, ol {
     @apply list-outside mt-2 ml-2 pl-6;
     ul, ol {
