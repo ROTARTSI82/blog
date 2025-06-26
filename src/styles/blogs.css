@@ -19,3 +19,18 @@
 .blog-tikz-done>svg {
   @apply m-auto;
 }
+
+.pfp {
+  @apply w-8 h-8;
+}
+
+.tight-flex {
+  @apply mt-1 flex;
+  > * {
+    @apply mx-2 my-auto;
+  }
+}
+
+.comment-content {
+  @apply p-2 ml-6;
+}

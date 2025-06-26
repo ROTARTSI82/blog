@@ -2,13 +2,14 @@
 import '../styles/global.css';
 import {link} from "../blog-util";
 
+const { title, ogtype } = Astro.props;
+import favicon from "../assets/favicon.ico";
+import { FirebaseLoader } from "../firebase-util";
+
 interface Props {
 	title: string,
 	ogtype?: string
 }
-
-const { title, ogtype } = Astro.props;
-import favicon from "../assets/favicon.ico";
 
 ---
 <!doctype html>
@@ -27,6 +28,7 @@ import favicon from "../assets/favicon.ico";
 		<title>{title}</title>
 	</head>
 	<body>
+		<FirebaseLoader client:load />
 		<div id="navbar">
 			<a href={link("/")}>Home</a>
 			<a href={link("/blog/")}>Blog</a>
@@ -41,7 +43,7 @@ import favicon from "../assets/favicon.ico";
 	@reference "tailwindcss";
 
 	#navbar {
-		@apply p-3 pl-4 w-full flex bg-purple-300 font-mono;
+		@apply p-3 px-4 w-full flex bg-purple-300 font-mono;
 		a {
 			@apply mr-8 no-underline text-black;
 		}

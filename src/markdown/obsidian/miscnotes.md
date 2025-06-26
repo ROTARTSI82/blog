@@ -224,7 +224,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ## Buffer
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -243,7 +243,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 1 |
 
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -257,7 +257,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ### AND
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -278,7 +278,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 0 |
 | 1 | 1 | 1 |
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -292,7 +292,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ### OR
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -318,7 +318,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 1 |
 | 1 | 1 | 1 |
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -332,7 +332,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ## Inverter
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -350,7 +350,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 0 | 1 |
 | 1 | 0 |
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -363,7 +363,7 @@ Substituting this into the original expression, we obtain the full problem.
 <div style="page-break-after: always;"></div>
 
 ### NAND
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -384,7 +384,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 1 |
 | 1 | 1 | 0 |
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -398,7 +398,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ### NOR
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -424,7 +424,7 @@ Substituting this into the original expression, we obtain the full problem.
 | 1 | 0 | 0 |
 | 1 | 1 | 0 |
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -438,7 +438,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ## Curveball 1
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -472,7 +472,7 @@ Substituting this into the original expression, we obtain the full problem.
 
 ## Curveball 2
 
-<span class="tikz"></span>
+
 ```tikz
 \usepackage{circuitikz}
 \begin{document}
@@ -677,7 +677,7 @@ $\therefore {1\over{A(t)}}$ is linear with respect to time, and its slope is the
 
 # Test Suite for TikzJax
 
-<span class="tikz"></span>
+
 
 ```tikz
 \begin{document}
@@ -691,7 +691,7 @@ $\therefore {1\over{A(t)}}$ is linear with respect to time, and its slope is the
   \end{tikzpicture}
 \end{document}
 ```
-<span class="tikz"></span>
+
 
 ```tikz
 \usepackage{circuitikz}
@@ -709,7 +709,7 @@ to[R=$R_2$, i>_=$i_2$]
 
 \end{document}
 ```
-<span class="tikz"></span>
+
 
 ```tikz
 \usepackage{pgfplots}
@@ -731,7 +731,7 @@ to[R=$R_2$, i>_=$i_2$]
 \end{document}
 ```
 
-<span class="tikz"></span>
+
 
 ```tikz
 \usepackage{tikz-cd}
@@ -766,7 +766,6 @@ C' \arrow[rr,"k'" near end] \arrow[dr,swap,"c"] && D' \arrow[dr,swap,"d"] \\
 \end{document}
 ```
 
-<span class="tikz"></span>
 
 ```tikz
 \usepackage{chemfig}
@@ -777,7 +776,7 @@ C' \arrow[rr,"k'" near end] \arrow[dr,swap,"c"] && D' \arrow[dr,swap,"d"] \\
 \end{document}
 ```
 
-<span class="tikz"></span>
+
 
 ```tikz
 \usepackage{chemfig}

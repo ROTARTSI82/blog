@@ -1,10 +1,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+// import rehypeKatex from 'rehype-katex';
 import rehypeMathjax from 'rehype-mathjax/chtml';
 import remarkToc from "remark-toc";
-import remarkCustomPlugin from './src/custom-remark-rehype.ts';
+import { remarkCustomPlugin, rehypeCustomPlugin } from './src/custom-remark-rehype';
 
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
@@ -20,6 +20,7 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
     rehypePlugins: [
+      rehypeCustomPlugin,
       [rehypeMathjax, {
         chtml: {
           scale: 1.2,

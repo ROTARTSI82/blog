@@ -7,7 +7,7 @@ interface CodeNode extends Node {
   children?: Node[];
 }
 
-export default function remarkCustomPlugin() {
+export function remarkCustomPlugin() {
   return (tree: Node) => {
     visit(tree, 'code', (node: CodeNode, index: number, parent: Parent) => {
       if (node.lang === 'tikz') {
@@ -22,3 +22,13 @@ export default function remarkCustomPlugin() {
     });
   };
 }
+
+export function rehypeCustomPlugin() {
+  return (tree: Node) => {
+    // console.log(tree);
+    visit(tree, 'heading', (node: any, index: number, parent: Parent) => {
+      // Scaffolding for custom rehype plugin
+    });
+  };
+}
+

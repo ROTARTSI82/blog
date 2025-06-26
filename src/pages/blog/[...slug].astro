@@ -1,11 +1,12 @@
 ---
-import "katex/dist/katex.min.css";
-import "katex/dist/contrib/mhchem.min.js";
+// import "katex/dist/katex.min.css";
+// import "katex/dist/contrib/mhchem.min.js";
 import "../../styles/blogs.css";
 
 import { type CollectionEntry, render } from 'astro:content';
 import Layout from "../../layouts/Layout.astro";
 import { calcBlogIndex, BlogIndex, link } from "../../blog-util";
+import { CommentSection } from "../../firebase-util";
 
 interface MDProps {
   post: any;
@@ -44,10 +45,10 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
 ---
 
 <Layout title={leaf === '1' ? post.data.title : `${slug}/ - Files`} ogtype="article">
-  <link slot="in-head" rel="stylesheet" type="text/css" href="http://tikzjax.com/v1/fonts.css" />
+  <link slot="in-head" rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
   <!--<script slot="in-head" src="https://tikzjax.com/v1/tikzjax.js" />-->
   <!--<script slot="in-head" src={link("/preprocess-tikz.js")}/>-->
-  <script fetchpriority="low" async slot="in-head" src={link("/tikzjax.js")}/>
+  <script is:inline fetchpriority="low" async slot="in-head" src={link("/tikzjax.js")}/>
 
   <code>{leaf} {slug}{leaf == '0' ? '/' : ''}</code>
   {leaf === '1' ? <>
@@ -60,6 +61,8 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
         <span class="byline">{date}</span>
       </div>
       <Content/>
+      <hr/>
+      <CommentSection url={Astro.url.pathname} client:load />
   </> : <BlogIndex post={post}/>}
 </Layout>
 
