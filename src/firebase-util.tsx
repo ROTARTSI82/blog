@@ -164,7 +164,8 @@ export const CommentSection: FC<NeedsURLId> = ({ url }) => {
   useEffect(() => {
     if (!db)
       return;
-    const q = query(collection(db, "pages", pageId, "comments"), orderBy("updated"), limit(100));
+    const q = query(collection(db, "pages", pageId, "comments"),
+      orderBy("updated", 'desc'), limit(100));
     getDocs(q).then(docs => {
       let ret: CommentRecord[] = []
       docs.forEach(doc => {

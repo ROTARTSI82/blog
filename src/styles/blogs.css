@@ -5,7 +5,7 @@
 }
 
 .astro-code {
-  @apply m-2 p-3;
+  @apply m-2 p-3 rounded-md;
 }
 
 #table-of-contents+ul {
@@ -33,4 +33,8 @@
 
 .comment-content {
   @apply p-2 ml-6;
+}
+
+:not(.astro-code) > code {
+  @apply bg-gray-200 rounded-md px-1 py-0.5 text-sm;
 }

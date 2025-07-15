@@ -1,7 +1,7 @@
 ---
-title: '[DRAFT] From Inner and Outer Products to Generalized Stokes'
+title: 'Inner and Outer Products'
 created: 'Jun 20 2025'
-subhead: "Mathposting!"
+subhead: "Mathposting! Geometric view of the wedge product, matrix determinants, cross product, etc. Bonus tidbit about Generalized Stokes too."
 tags: "mathposting"
 ---
 
@@ -283,7 +283,7 @@ $$
 You might have noticed that to take a divergence, we must Hodge dual our vector field first to get a bivector field, then Hodge dual
 our result again to get back to a scalar from a pseudoscalar. Thus it is useful to define a **codifferential** operator:
 $$
-\delta = \ast \mathrm{d} \ast.
+\delta = (-1)^{\text{something}} \ast \mathrm{d} \ast.
 $$
 
 Ok, this is actually wrong and will sometimes give you the wrong sign but close enough.
