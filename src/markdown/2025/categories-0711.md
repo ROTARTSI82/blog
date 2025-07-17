@@ -1,12 +1,17 @@
 ---
 title: 'Category Theory with Haskell and Rust'
 created: '2025-07-11'
+modified: '2025-07-16'
 subhead: "A monad is a monoid in the category of endofunctors. What is a category? Functors, monads, initial and terminal objects, etc."
 tags: "mathposting"
 ---
 
-Crash course on category theory stuff I guess. I assume some basic background, but
-it should be enough to know that a [monoid](https://en.wikipedia.org/wiki/Monoid) is a set with an associative binary operation
+Crash course on category theory stuff I guess. 
+
+I assume some basic background, and will not
+be explaining Haskell or Rust concepts in depth. You can read [Learn You A Haskell](https://learnyouahaskell.com/chapters)
+for an intro to Haskell.
+You should also know that a [monoid](https://en.wikipedia.org/wiki/Monoid) is a set with an associative binary operation
 and an identity element.
 
 # Table of Contents
@@ -43,16 +48,7 @@ of a type.
 We can concretely represent a morphism between two sets $f: X \to Y$ using another set: we
 simply write out all the (input, output) pairs in a set, where for every element of $X$
 there is exactly one associated output from $Y$. We construct these (input, output) pairs
-with something called a **Cartesian product**, and we say that $X \times Y$ is the set of all possible $(x, y)$ tuples. 
-The upshot is that in addition to having this Cartesian product, morphisms in $\textbf{Set}$ are also objects in
-the category (morphisms *are* objects!), so we say that $\textbf{Set}$ is **Cartesian closed**.
-It turns out that this is exactly the property that we need for **currying** to work. 
-
-For example, in the Cartesian closed category of $\textbf{Hask}$, we have
-```haskell
-curry :: ((a, b) -> c) -> a -> b -> c
-uncurry :: (a -> b -> c) -> (a, b) -> c
-```
+with something called a **Cartesian product**, and we say that $X \times Y$ is the set of all possible $(x, y)$ tuples.
 
 # The Category of $\textbf{Hask}$
 
@@ -65,16 +61,16 @@ Bool = {True, False}
 ...
 ```
 
-A point of confusion here for me was that a morphism is a *specific* Haskell functions,
-whereas the objects are the Haskell types themselves, not specific instances of that type.
+A point of confusion here for me was that a morphism is a *specific* Haskell function.
+On the other hand, the objects are the Haskell types themselves, not specific instances of that type.
 Think back to the analogy for $\textbf{Set}$ and how we define functions on a set to
-take *elements* of that set and return *elements* of another set. In fact, $\textbf{Hask}$
-is a **concrete category** since we have a mapping from $\textbf{Hask}$ to $\textbf{Set}$
-(just associate each type with the set of the instances of that type as shown above). 
+take *elements* of that set and return *elements* of another set. In fact,
+we have a mapping from $\textbf{Hask}$ to $\textbf{Set}$:
+just associate each type with the set of the instances of that type as described above. 
 This mapping between categories from $\textbf{Hask}$ to $\textbf{Set}$ is 
-a **functor**, and it not only associates every object in $\textbf{Hask}$ to a corresponding object
-in $\textbf{Set}$, but it also must associate morphisms too! We expect this functor $F$ to respect
-function composition and such:
+an example of a **functor**, which associates both objects *and* morphisms in $\textbf{Hask}$ to 
+corresponding ones in $\textbf{Set}$. We expect this functor $F$ to respect
+function composition and obey this commutative diagram:
 
 ```tikz
 \usepackage{tikz-cd}
@@ -98,13 +94,26 @@ function composition and such:
 \end{document}
 ```
 
-Drawing parallels to $\textbf{Set}$, notice that because `a -> b` itself is a type in Haskell (the type of functions from a to b),
-$\textbf{Hask}$ is Cartesian closed (morphisms are objects) and permits currying as seen before.
-Here, building a tuple type is the Cartesian product. With fancy terminology,
-this `a -> b` type is more or less the **hom-set** $\mathrm{Hom}(A, B)$ (which is like a collection of morphisms or something, excuse me while I horribly abuse notation):
-$$
-\mathrm{Hom}(A\times B, C) \cong \mathrm{Hom}(A,B\to C).
-$$
+Because we can build this representation of $\textbf{Hask}$ in $\textbf{Set}$,
+we call $\textbf{Hask}$ a **concrete category**. 
+The triangle on the bottom would be in $\textbf{Hask}$, while the top triangle would be in $\textbf{Set}$.
+Note that $F$ is not invertible! 
+
+Let's continue examining the properties of this $\textbf{Hask}$ category-- remember the Cartesian product from $\textbf{Set}$? 
+Tuple types in $\textbf{Hask}$ do the same thing: instead of $A\times B$ we have the type `(a, b)`.
+Being a typesystem, $\textbf{Hask}$ also has types for functions, and we can write `a -> b`
+to denote the type of functions from type `a` to type `b`.
+In this way, morphisms on $\textbf{Hask}$ are also "elements" of these
+objects in $\textbf{Hask}$, and $\textbf{Hask}$ is **Cartesian closed** (actually, $\textbf{Set}$ was
+Cartesian closed too!). The fact that we have types for functions and a Cartesian product means we can do **currying**:
+
+```haskell
+curry :: ((a, b) -> c) -> a -> b -> c
+uncurry :: (a -> b -> c) -> (a, b) -> c
+```
+
+Mr. Haskell Curry must be proud. Currying is the relationship that any 2-argument function is equivalent to some
+1-argument function that returns another 1-argument function (and vice versa).
 
 In addition to having these mappings between two different categories, we are also allowed
 to have mappings from a category to itself! These are called **endofunctors**, and of course
@@ -201,7 +210,7 @@ from `!` to every other type, there is an unambiguous way to convert `!` to any 
 
 Now things get interesting.
 I'm going to work backwards and reveal the "implementation details" of the initial object first
-before going back and deriving the desired properties. 
+before going back and deriving the desired ==properties.==
 `!` is a type with no inhabitants, i.e. it cannot be instantiated. You can think of it as 
 ```rust
 enum Never {}; // this is !
@@ -431,4 +440,6 @@ we get the covector $v^T : V \to \mathbb{R}$.
 $$
 v^T v = v\cdot v \in \mathbb{R}.
 $$
+
+# Aside: Exponential Objects
 

@@ -58,6 +58,8 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
 
       <div class="m-auto text-center">
         <h1>{post.data.title}</h1>
+        <span class="subhead">{post.data.subhead ?? ""}</span>
+        <br/>
         <span class="byline">{date}</span>
       </div>
       <Content/>

@@ -4,6 +4,10 @@
   @apply italic;
 }
 
+.subhead {
+  @apply text-sm;
+}
+
 .astro-code {
   @apply m-2 p-3 rounded-md;
 }
