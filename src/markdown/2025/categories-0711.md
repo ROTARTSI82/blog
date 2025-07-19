@@ -96,32 +96,54 @@ function composition and obey this commutative diagram:
 
 Because we can build this representation of $\textbf{Hask}$ in $\textbf{Set}$,
 we call $\textbf{Hask}$ a **concrete category**. 
-The triangle on the bottom would be in $\textbf{Hask}$, while the top triangle would be in $\textbf{Set}$.
-Note that $F$ is not invertible! 
+The $X$-$Y$-$Z$ triangle on the bottom would be in $\textbf{Hask}$, while the $F(X)$-$F(Y)$-$F(Z)$ triangle would be in $\textbf{Set}$.
+Also note that $F$ is not invertible! 
 
-Let's continue examining the properties of this $\textbf{Hask}$ category-- remember the Cartesian product from $\textbf{Set}$? 
-Tuple types in $\textbf{Hask}$ do the same thing: instead of $A\times B$ we have the type `(a, b)`.
-Being a typesystem, $\textbf{Hask}$ also has types for functions, and we can write `a -> b`
-to denote the type of functions from type `a` to type `b`.
-In this way, morphisms on $\textbf{Hask}$ are also "elements" of these
+In addition to having these mappings between two different categories ($\textbf{Hask}\to\textbf{Set}$), we are also allowed
+to have mappings from a category to itself. These are called **endofunctors**, and of course
+monads are monoids in the category of endofunctors so we have to understand these. I will talk more about 
+endofunctors and monads in the next section, but first we need to address the Curry in the Haskell...
+
+Remember the Cartesian product from $\textbf{Set}$? 
+Tuple types in $\textbf{Hask}$ do the same thing: instead of $X\times Y$ we have the type `(x, y)`.
+Being a typesystem, $\textbf{Hask}$ also has types for functions, and we can write `x -> y`
+to denote the type of functions from type `x` to type `y`.
+In this way, morphisms in $\textbf{Hask}$ are also "elements" of these
 objects in $\textbf{Hask}$, and $\textbf{Hask}$ is **Cartesian closed** (actually, $\textbf{Set}$ was
 Cartesian closed too!). The fact that we have types for functions and a Cartesian product means we can do **currying**:
 
 ```haskell
-curry :: ((a, b) -> c) -> a -> b -> c
-uncurry :: (a -> b -> c) -> (a, b) -> c
+curry :: ((x, y) -> z) -> x -> y -> z
+uncurry :: (x -> y -> z) -> (x, y) -> z
 ```
 
 Mr. Haskell Curry must be proud. Currying is the relationship that any 2-argument function is equivalent to some
-1-argument function that returns another 1-argument function (and vice versa).
+1-argument function that returns another 1-argument function (and vice versa). 
 
-In addition to having these mappings between two different categories, we are also allowed
-to have mappings from a category to itself! These are called **endofunctors**, and of course
-monads are monoids in the category of endofunctors so we have to understand these.
+Bonus tidbit: Category theorists would call the type `y -> z` an exponential object in $\textbf{Hask}$, written
+as $Z^Y$. See the [Wikipedia page](https://en.wikipedia.org/wiki/Exponential_object) for more details, but the 
+reason it's "exponential" is that the number of morphisms $Y \to Z$ is literally $|Z|^{|Y|}$: each function
+must choose an output from one of $|Z|$ options for each of its $|Y|$ inputs. If you want to look at another commutative diagram (totally optional btw), notice how $\lambda g$ corresponds to
+`curry g`:
+```tikz
+\usepackage{tikz-cd}
+\begin{document}
+% https://q.uiver.app/#q=WzAsNSxbMCwwLCJYIl0sWzAsMiwiWl5ZIl0sWzIsMCwiWFxcdGltZXMgWSJdLFsyLDIsIlpeWVxcdGltZXMgWSJdLFs0LDIsIloiXSxbMCwxLCJcXGxhbWJkYSBnIiwwLHsic3R5bGUiOnsiYm9keSI6eyJuYW1lIjoiZGFzaGVkIn19fV0sWzIsMywiXFxsYW1iZGEgZ1xcdGltZXMgXFxtYXRocm17aWR9X1kiLDIseyJzdHlsZSI6eyJib2R5Ijp7Im5hbWUiOiJkYXNoZWQifX19XSxbMiw0LCJnIiwyXSxbMyw0LCJcXHRleHR7ZXZhbH0iLDJdXQ==
+\begin{tikzcd}
+	X && {X\times Y} \\
+	\\
+	{Z^Y} && {Z^Y\times Y} && Z
+	\arrow["{\lambda g}", dashed, from=1-1, to=3-1]
+	\arrow["{\lambda g\times \mathrm{id}_Y}"', dashed, from=1-3, to=3-3]
+	\arrow["g"', from=1-3, to=3-5]
+	\arrow["{\mathrm{eval}}"', from=3-3, to=3-5]
+\end{tikzcd}
+\end{document}
+```
 
 
 ## Monads
-One example of an endofunctor is `List`:
+Now back to endofunctors! One example of an endofunctor is `List`:
 it takes any type `a` to the type `List a`, which is obviously
 just a list of `a`s. Since we are mapping from a type to another type,
 this is an endofunctor from the category of $\textbf{Hask}$ back into the category of $\textbf{Hask}$.
@@ -133,128 +155,79 @@ fmap :: Functor f => (a -> b) -> f a -> f b
 ```
 
 
-`fmap` simply applies the endofunctor (e.g. `List`) to a morphism `f :: a -> b`. Note that with
-`fmap` we are talking about `List f` (thats not valid Haskell but you get it) and not `List (a -> b)`, which is dealing with the
-*type* `a -> b` and not the *morphism* `f`.
+`fmap` simply applies the endofunctor (e.g. `List`) to a morphism like `do_something :: a -> b`. Note that with
+`fmap`, we are talking about `List do_something` (that's not valid Haskell but you get it) and not `List (a -> b)`, which is dealing with the
+*object* `a -> b` (the type) and not the *morphism* `do_something` (the actual function).
 Remember currying: we want to interpret `fmap` as a function that takes in a function and returns a new
 function that acts on lists rather than raw `a`s and `b`s. The alternative interpretation
 is that `fmap` takes in two arguments: a function to map over a list and a list to map over,
 returning the result of applying that function over the list. However, this interpretation
 is less useful when we're thinking about monads.
 
-To make `List` into a **monad**, not just an endofunctor, we need additional structure in the form of a
+To make `List` into a **monad**, not just an endofunctor (a monad is like a subclass of endofunctors),
+we need additional structure in the form of a
 multiplication $\mu$ and a unit $\eta$, called `join` and `return` respectively. Technically,
 [wikipedia](https://en.wikipedia.org/wiki/Monad_(category_theory))
 defines these as **natural transformations** ("morphisms of functors") but we can
-do the same thing without opening that can of worms:
+do the same thing without opening that can of worms (for now):
 
 ```haskell
 join :: Monad m => m (m a) -> m a
 return :: Monad m => a -> m a
 ```
 
-Here, `join` simply flattens the list, and `return` returns a singleton list
+Here, `join` simply flattens the list by one level, and `return` returns a singleton list
 with one element (whatever we pass into it). Note the difference between `List` itself
-and `return`: `List` is a functor mapping Haskell types and Haskell functions (morphisms),
+and `return`: `List` is a functor acting on Haskell types and Haskell functions (morphisms),
 while `return` is a morphism that maps specific instances of Haskell types to instances of the list type.
 The purpose of these operations is probably better understood with the most famous monad: `Maybe`. A `Maybe`
 is like a `List` that can have 0 or 1 elements: it can be either a `Nothing`, or a `Something value`.
 
 In functional programming, instead of using exceptions, we may want to make
 a function return something like a `Maybe Int` when it might fail. For example,
-it might return `Something 2` when it succeeds, or a `Nothing` when it fails.
-It would build this `Maybe Int` using `return`, and if we wanted to manipulate the `Int` inside the `Maybe`
-we would use `fmap f` where `f` is some function that takes `Int`s. But what if
-`f` is another function that might fail? Then `fmap f result` would be a `Maybe Maybe Int`,
-which is not ideal, so we can use `join` to turn the `Maybe Maybe Int` back to a `Maybe Int`.
+it might return `Something 2` when it succeeds, or a `Nothing` when it fails. Let's look at an example of `join`:
 
-This idea of `join (fmap f result)` is of course monad bind, `result >>= f`. However,
-I like **Kleisli composition** `(<=<)` better than bind because it's more symmetric,
-so I will use that:
+```haskell
+-- these functions can make `Maybe Int`s by using Maybe's `return`.
+func_might_fail :: Int -> Maybe Int
+compute_something :: Int -> Maybe Int
+
+result = func_might_fail 2
+
+-- this is the same thing as writing `result >>= compute_something`, where >>= is monad bind.
+final_result = join (fmap compute_something result)
+```
+
+Here, we have two functions that might fail: `func_might_fail` and `compute_something`. We
+wanted to compose them together, but we ran into the problem that `fmap compute_something (func_might_fail 2)`
+would be a `Maybe Maybe Int`. Thankfully, `join` can take us back to a `Maybe Int` by erasing information
+about where specifically our operation failed: we can no longer distinguish between an error in `func_might_fail`
+(where we get `Nothing`) and an error in `compute_something` (we get `Something Nothing`).
+
+With this, we can define a really nice operation for composing these functions called **Kleisli composition**:
 ```haskell
 (>>=) :: Monad m => m a -> (a -> m b) -> m b
+
+-- (g <=< f) = \x -> join (fmap g (f x))
 (<=<) :: Monad m => (b -> m c) -> (a -> m b) -> a -> m c
+
 (.) :: (b -> c) -> (a -> b) -> a -> c
 ```
 
-Notice how `(<=<)` (which can be implemented from `fmap` and `join`) mirrors the normal function composition `(.)`. 
-This means that we have the following **monoid** properties:
+Notice how `(<=<)` mirrors the normal function composition `(.)`. 
+This means that we have the following **monoid** properties on the functions `f`, `g`, and `h`:
 ```haskell
 return <=< f = f                   -- Left-identity
 f <=< return = f                   -- Right-identity
 (f <=< g) <=< h = f <=< (g <=< h)  -- Associativity
 ```
 
-We have a monoid! I don't think this is the famous monoid in the category of endofunctors though,
-we have to go through natural transformations for that.
+We have a monoid! This isn't exactly the famous monoid in the category of endofunctors though, but I'll
+explain that after we cover natural transformations.
 
 Bonus fun fact: functions are monads too! Consider `(a ->)`. Here `fmap` is just normal function composition `(.)`,
 `return` builds a constant function, and `join` just feeds in the input value twice to unwrap
 the inner function.
-
-## Initial and Terminal Objects
-One of the really cool things you get when looking at a typesystem from a category-theoretic
-point of view is the concept of **initial objects** and **terminal objects**. These concepts
-are dual to each other (you reverse the arrows in the commutative diagrams),
-so let's look at them one at a time.
-
-A terminal object is an object where every other object has exactly one morphism to the terminal object.
-In Rust, the terminal object is the type `()`.
-The terminal object is a type with exactly one inhabitant, so we can think of the terminal object as a singleton set.
-Since there is only one possible value it can have, the only possible function you can write is returning that value,
-so there is a de facto way to convert every other type to a `()`.
-
-An initial object in a category is an object for which there is exactly one morphism to every
-other object. In Rust, the initial object is a type called `Never`, or `!`. Because there is only one morphism
-from `!` to every other type, there is an unambiguous way to convert `!` to any other type.
-
-Now things get interesting.
-I'm going to work backwards and reveal the "implementation details" of the initial object first
-before going back and deriving the desired ==properties.==
-`!` is a type with no inhabitants, i.e. it cannot be instantiated. You can think of it as 
-```rust
-enum Never {}; // this is !
-```
-It is an empty set, and while you can never have a value of type `!`, you can talk about the type `!` itself.
-But then how is that useful at all?? Well, `!` is the type of an unreachable branch of code. Consider the following Rust example:
-
-```rust
-fn do_something(_: i32) -> Result<i32, Error>;
-
-fn do_other_thing(_: i32) -> ();
-
-fn f(x: i32) -> Option<i32> {
-    let y: i32 = match do_something(x) {
-        Ok(v) => v + 5, // this is i32
-        Err(_) => {
-            println!("Oh no!");
-            return None; // `return` has type !, which can be converted to anything
-        }
-    }; // overall, y is still i32 since we can convert the !
-    
-    do_other_thing(y);
-    
-    Some(y * 6)
-}
-```
-
-Of course, this example is an implementation of the `?` operator.
-Because control flow never exits from the other side of the `Err(_)` branch,
-the compiler can give it a type of `!` because it will never face the paradox
-of making a value of `!`. Other expressions can also be `!`, like `panic!` and `loop {}`.
-
-So why does this mean there's exactly one morphism from `!` to every other type?
-Remember the formal way we represented morphisms in $\textbf{Set}$ as sets:
-a set of all (input, output) pairs. However, since there are *no possible inputs*,
-our one and only morphism is simply the empty set $\varnothing$! This is a very 
-strange function which exists, but can never be called. An implementation in Rust might look like
-```rust
-enum Never {};
-
-fn coerce<T>(x: Never) -> T {
-    match x {}
-}
-```
 
 # Natural Transformations 💀
 
@@ -296,8 +269,71 @@ Here, $1_\mathcal{C}$ is the identity functor that maps $\mathcal{C}$ back to it
 and $T \circ T$ is functor composition (e.g. a list of lists).
 Thus, $\eta$ is just a collection of `return` morphisms, one for every object (every type in $\textbf{Hask}$), and
 $\mu$ is similarly a collection of `join` morphisms. This new perspective is useful
-for talking about the category of endofunctors in $\textbf{Hask}$, but before
-we go there, let's first understand this commutative diagram that monads obey:
+for talking about the category of endofunctors in $\textbf{Hask}$.
+
+## A Monoid in the Category of Endofunctors
+This is even more abstract nonsense but here goes! A **monoid** in category theory is slightly different
+from the familiar definition of a set with an associative binary operation and a unit. In category theory,
+a monoid is an object $M$ in some category. This object $M$ must have a morphism $\eta : I \to M$ that gives
+the identity element, and a morphism $\mu : M \otimes M \to M$ that defines the monoid's binary operation.
+If we consider $M$ to be an object in the category of $\textbf{Set}$, we recover our usual definition of a
+monoid: the set has some elements, and there is a multiplication on those elements and an identity element. Note
+that the $I$ object in $\textbf{Set}$ would be the singleton set (a set with one element).
+
+Notice how this exactly lines up with our monad $T$, if we consider it to be an object in the category of
+endofunctors on $\textbf{Hask}$. Remember how we defined our monad's $\mu$ and $\eta$ to be natural transformations on
+$\textbf{Hask}$? Now that we are working in the category of endofunctors on $\textbf{Hask}$, these become exactly
+the morphisms necessary for $T$ (which is an endofunctor on $\textbf{Hask}$ and thus an object in this new category) 
+to be considered a monoid. And obviously the $I$ object is $\textbf{1}_\mathcal{C}$, the identity endofunctor that
+does nothing, as we saw in the definition for $\nu$.
+
+But there's also a subtle problem in our initial definition of a monoid: morphisms must be between objects of the same category,
+so for us to have a $\mu : M \otimes M \to M$, we need $M \otimes M$ to be an object in our initial category!
+This leads us to the restriction that a monoid must be an object in a **monoidal category** (I'm not going to lie,
+this is *very* confusing terminology but roll with it). A category $\mathcal{C}$ is a monoidal category
+if there is a bifunctor $\otimes : \mathcal{C}\times\mathcal{C}\to\mathcal{C}$ where $\mathcal{C}\times\mathcal{C}$
+is what's called a **product category** (this is the exact same idea as a Cartesian product which we saw before,
+and the category of categories is Cartesian closed).
+
+In the category of endofunctors, this $\otimes$ functor just evaluates the composition
+of endofunctors (i.e, we take in two endofunctors and return another endofunctor: the result of composing
+one with the other). Just as $T$ (e.g. the `List` monad) is an endofunctor, so is $T\circ T$ (or `List List`), so in
+the category of endofunctors we can have a morphism $\mu : T^2 \to T$. However, this $\otimes$ functor ends up with
+properties mirroring those of $\mu : M \otimes M \to M$: it defines an associative binary operation on the
+entire category of $\mathcal{C}$, and the $I$ object in $\mathcal{C}$ ends up acting as an identity for this operation.
+Thus, ==a monoidal category is a monoid in the category of categories.== However, this is not the monoid we
+are really talking about when we say that a monad is a monoid in the category of endofunctors: we are talking
+about the endofunctor $T$ as an object in this category.
+
+### What is an "Element" of an Endofunctor?
+But this raises a natural question. Our usual definition of a monoid dealt with a binary operation
+on the *elements* of the monoid *object* in the category theoretic definition of a monoid.
+So what are the "elements" of the $T$ endofunctor? Let us explore the concept of an "element"
+of a set and an "instance" of a type in purely category-theoretic terms.
+
+An element $x$ of some set $X$ corresponds exactly with a morphism $f_x : I \to X$, where $I$
+is the singleton set. This morphism $f_x$ simply maps the single
+element of the singleton set to the element $x$ it corresponds to.
+Similarly, an instance `obj :: a` corresponds exactly
+with a function `f () = obj`, where `f :: () -> a`. In Haskell, the type `()` is the equivalent of a singleton set:
+it is the unit type with exactly one inhabitant (there is only one value it can have, and the value
+is also called `()`). 
+
+I don't think there is a generalized way to determine what object we should choose (the equivalent
+of a singleton set or unit type)
+as the object to define what an "element" is, and honestly idk what the correct choice is. I actually don't
+have an answer for this so let's just mess around.
+Say we choose the identity functor
+$\textbf{1}_\mathcal{C}$. Then, each "element" of the endofunctor $T$ would correspond to a unique
+natural transformation $\alpha : \textbf{1}_\mathcal{C} \to T$. Looking at the commutative square that natural
+transformations must respect, the only thing I can think of is taking everything to a list of it repeated $n$ times.
+In this case I think we end up with the multiplication of non-negative integers as our monoid??? Idk someone help me here.
+
+## More Natural Transformations 💀💀
+You did it! Now you understand why a monad is a monoid in the category of endofunctors! But
+we can go deeper into category theory land...
+
+Let's make sense of this commutative diagram from the category theory definition of a monad:
 
 ```tikz
 \usepackage{tikz-cd}
@@ -325,11 +361,11 @@ endofunctor 3 times. Remember that $\mu_X$ is one of the `join` morphisms we jus
 `join :: List List X -> List X`, flattening a list of $X$s. The morphism 
 $T(\mu_X)$ is just the `fmap` of this function, and from here you can probably figure out
 what the rest means (some of them replace the subscript `X` with `List X`). 
-These two squares boil down to these two equations on `some_list :: List List List a`
-and `other_list :: List a`:
+These two squares boil down to these two equations on `triple_list :: List List List a`
+and `single_list :: List a`:
 ```haskell
-join (fmap join some_list) = join (join some_list)        -- Left square (associativity)
-join (fmap return other_list) = join (return other_list)  -- Right square (identity)
+join (fmap join triple_list) = join (join triple_list)      -- Left square (associativity)
+join (fmap return single_list) = join (return single_list)  -- Right square (identity)
 ```
 
 (This probably doesn't work in real Haskell since it wouldn't know
@@ -417,13 +453,80 @@ Thus, whiskering and horizontal composition utilizes the composition of the unde
 natural transformation, and you should be able to convince yourself that the two versions of the monad
 commutative diagrams are the same.
 
-## A Monoid in the Category of Endofunctors
-Ok I still genuinely have no idea how this works at this point. Someone please explain to me.
 
-Generalization of elements in a set and instances of a type: each "element" of an object $X$ is associated
-with a morphism from the terminal object to $X$. Note this is the co- version of the definition of the
-terminal object, which says there is one morphism from every $X$ to the terminal object. There is no morphism
-from the terminal object to the initial object.
+# Initial and Terminal Objects
+One of the really cool things you get when looking at a typesystem from a category-theoretic
+point of view is the concept of **initial objects** and **terminal objects**. These concepts
+are dual to each other (you reverse the arrows in the commutative diagrams),
+so let's look at them one at a time.
+
+A terminal object is an object where every other object has exactly one morphism to the terminal object.
+In Rust, the terminal object is the type `()`.
+The terminal object is a type with exactly one inhabitant, so we can think of the terminal object as a singleton set.
+Since there is only one possible value it can have, the only possible function you can write is returning that value,
+so there is a de facto way to convert every other type to a `()`.
+
+<!-- Terminal objects also give you a really nice
+way to generalize the idea of an "element" of a set or an "instance" of a type into pure category theory:
+each element of a set $X$ is associated with one morphism from the terminal object (singleton set) to $X$. Notice
+how this lines up with the concept of an exponential object as described in the section on currying. -->
+
+An initial object in a category is an object for which there is exactly one morphism to every
+other object. In Rust, the initial object is a type called `Never`, or `!`. Because there is only one morphism
+from `!` to every other type, there is an unambiguous way to convert `!` to any other type.
+
+But what is `!`? Now things get interesting.
+I'm going to work backwards and reveal the "implementation details" of the initial object first
+before going back and deriving the desired properties.
+`!` is a type with no inhabitants, i.e. it cannot be instantiated. You can think of it as
+```rust
+enum Never {}; // this is !
+```
+It is an empty set, and while you can never have a value of type `!`, you can talk about the type `!` itself.
+But then how is that useful at all?? Well, `!` is the type of an expression that can *never* be materialized.
+Expressions like `loop {}`, `panic!`, and `return` have type `!`.
+To see what I mean, consider the following Rust example:
+
+```rust
+fn do_something(_: i32) -> Result<i32, Error>;
+
+fn do_other_thing(_: i32) -> ();
+
+fn f(x: i32) -> Option<i32> {
+    let y: i32 = match do_something(x) {
+        Ok(v) => v + 5, // this is i32
+        Err(_) => {
+            println!("Oh no!");
+            return None; // `return` has type !, which can be converted to anything
+        }
+    }; // overall, y is still i32 since we can convert the !
+    
+    do_other_thing(y);
+    
+    Some(y * 6)
+}
+```
+
+Of course, this example is an implementation of the `?` operator. Because of the semantics of a Rust `match`,
+the `Err(_)` branch of the code is basically running `let y: i32 = return None;` at the end of the day. Yet,
+because `return` is `!` and `!` is the initial object, `y` really *is* an `i32`.
+Control flow never exits from the other side of the `Err(_)` branch after the `return`,
+and the compiler can use `!` because it will never face the paradox
+of making a value of `!`.
+
+So why does this mean there's exactly one morphism from `!` to every other type?
+Remember the formal way we represented morphisms in $\textbf{Set}$ as sets:
+a set of all (input, output) pairs. However, since there are *no possible inputs*,
+our one and only morphism is simply the empty set $\varnothing$! This is a very
+strange function which exists, but can never be called. An implementation in Rust might look like
+```rust
+enum Never {};
+
+fn coerce<T>(x: Never) -> T {
+    match x {}
+}
+```
+
 
 # Tidbit: Co-vectors with Category Theory
 The category of finite-dimensional vector spaces is cartesian closed too. Objects
@@ -441,5 +544,4 @@ $$
 v^T v = v\cdot v \in \mathbb{R}.
 $$
 
-# Aside: Exponential Objects
 
