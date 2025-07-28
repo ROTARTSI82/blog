@@ -32,9 +32,8 @@ export function link(s: string) {
 
 export function BlogIndex(prop: any) {
   let objects = Object.keys(prop.post)
-    .map(x => [(('id' in prop.post[x]) ? '1' : '0')+x, x])
     .filter(l =>
-      !prop.post[l[1]].data?.tags?.split(',')?.includes('hide-dir'));
+      !prop.post[l].data?.tags?.split(',')?.includes('hide-dir'));
 
   return <>
     <meta property="og:description" content={`Directory with ${objects.length} items.`} />
@@ -42,9 +41,9 @@ export function BlogIndex(prop: any) {
 
     <ul className="list-disc list-inside mt-2">
       {objects.sort().map(l =>
-        <li key={l[0]}>
-          <code className="mr-2">{l[0][0]}</code>
-          <a href={link(prop.isRoot ? `/blog/${l[1]}/` : `${l[1]}/`)}>{l[1]}</a>
+        <li key={l}>
+          <code className="mr-2">{'id' in prop.post[l] ? 0 : Object.keys(prop.post[l]).length}</code>
+          <a href={link(prop.isRoot ? `/blog/${l}/` : `${l}/`)}>{l}</a>
         </li>
       )}
     </ul>

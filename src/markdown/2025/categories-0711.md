@@ -1,8 +1,8 @@
 ---
-title: 'Category Theory with Haskell and Rust'
+title: 'A Monad is a Monoid in the Category of Endofunctors'
 created: '2025-07-11'
 modified: '2025-07-16'
-subhead: "A monad is a monoid in the category of endofunctors. What is a category? Functors, monads, initial and terminal objects, etc."
+subhead: "Exploring category theory with Haskell and Rust. What is a category? Functors, monads, initial and terminal objects, etc."
 tags: "mathposting"
 ---
 
@@ -280,12 +280,12 @@ If we consider $M$ to be an object in the category of $\textbf{Set}$, we recover
 monoid: the set has some elements, and there is a multiplication on those elements and an identity element. Note
 that the $I$ object in $\textbf{Set}$ would be the singleton set (a set with one element).
 
-Notice how this exactly lines up with our monad $T$, if we consider it to be an object in the category of
+Notice how this exactly lines up with our monad $T$ if we consider it to be an object in the category of
 endofunctors on $\textbf{Hask}$. Remember how we defined our monad's $\mu$ and $\eta$ to be natural transformations on
 $\textbf{Hask}$? Now that we are working in the category of endofunctors on $\textbf{Hask}$, these become exactly
 the morphisms necessary for $T$ (which is an endofunctor on $\textbf{Hask}$ and thus an object in this new category) 
 to be considered a monoid. And obviously the $I$ object is $\textbf{1}_\mathcal{C}$, the identity endofunctor that
-does nothing, as we saw in the definition for $\nu$.
+does nothing, as we saw in the definition for $\eta$.
 
 But there's also a subtle problem in our initial definition of a monoid: morphisms must be between objects of the same category,
 so for us to have a $\mu : M \otimes M \to M$, we need $M \otimes M$ to be an object in our initial category!
@@ -293,7 +293,7 @@ This leads us to the restriction that a monoid must be an object in a **monoidal
 this is *very* confusing terminology but roll with it). A category $\mathcal{C}$ is a monoidal category
 if there is a bifunctor $\otimes : \mathcal{C}\times\mathcal{C}\to\mathcal{C}$ where $\mathcal{C}\times\mathcal{C}$
 is what's called a **product category** (this is the exact same idea as a Cartesian product which we saw before,
-and the category of categories is Cartesian closed).
+and the category of categories is Cartesian closed. Also, every cartesian closed category is also monoidal closed).
 
 In the category of endofunctors, this $\otimes$ functor just evaluates the composition
 of endofunctors (i.e, we take in two endofunctors and return another endofunctor: the result of composing
@@ -301,9 +301,11 @@ one with the other). Just as $T$ (e.g. the `List` monad) is an endofunctor, so i
 the category of endofunctors we can have a morphism $\mu : T^2 \to T$. However, this $\otimes$ functor ends up with
 properties mirroring those of $\mu : M \otimes M \to M$: it defines an associative binary operation on the
 entire category of $\mathcal{C}$, and the $I$ object in $\mathcal{C}$ ends up acting as an identity for this operation.
-Thus, ==a monoidal category is a monoid in the category of categories.== However, this is not the monoid we
+Thus, a monoidal category is a monoid in the category of categories. However, this is not the monoid we
 are really talking about when we say that a monad is a monoid in the category of endofunctors: we are talking
-about the endofunctor $T$ as an object in this category.
+about the endofunctor $T$ as a monoid object in this category. It's also possible to "categorify" a monoid
+object into a monoidal category with only one object (with the associative
+binary operation being the composition of morphisms), but that's also completely beside the point.
 
 ### What is an "Element" of an Endofunctor?
 But this raises a natural question. Our usual definition of a monoid dealt with a binary operation
@@ -328,6 +330,12 @@ $\textbf{1}_\mathcal{C}$. Then, each "element" of the endofunctor $T$ would corr
 natural transformation $\alpha : \textbf{1}_\mathcal{C} \to T$. Looking at the commutative square that natural
 transformations must respect, the only thing I can think of is taking everything to a list of it repeated $n$ times.
 In this case I think we end up with the multiplication of non-negative integers as our monoid??? Idk someone help me here.
+
+Here's the detail of how to find the "element" of $T^2$ that corresponds to the product of two "elements" of $T$:
+say the natural transformations $\alpha, \beta : \textbf{1}_\mathcal{C} \to T$ are elements of $T$. Whiskering $T\alpha$ yields a natural transformation
+$T \circ \textbf{1}_\mathcal{C} \to T\circ T$, so the expression $T\alpha \circ \beta$ is a natural transformation 
+$\textbf{1}_\mathcal{C} \to T \circ T$ and thus an "element" of $T^2$. See the section below for an explanation
+of whiskering:
 
 ## More Natural Transformations 💀💀
 You did it! Now you understand why a monad is a monoid in the category of endofunctors! But

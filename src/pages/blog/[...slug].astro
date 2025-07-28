@@ -50,7 +50,7 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
   <!--<script slot="in-head" src={link("/preprocess-tikz.js")}/>-->
   <script is:inline fetchpriority="low" async slot="in-head" src={link("/tikzjax.js")}/>
 
-  <code>{leaf} {slug}{leaf == '0' ? '/' : ''}</code>
+  <code>{leaf === '1' ? 0 : Object.keys(post).length} {slug}{leaf == '0' ? '/' : ''}</code>
   {leaf === '1' ? <>
       <meta property="og:description" content={`${date} - ${post.data.subhead ?? "No description."}`} />
       <meta property="og:published_time" content={post.data.created} />
@@ -65,6 +65,6 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
       <Content/>
       <hr/>
       <CommentSection url={Astro.url.pathname} client:load />
-  </> : <BlogIndex post={post}/>}
+  </> : <BlogIndex post={post} leaf={leaf}/>}
 </Layout>
 
