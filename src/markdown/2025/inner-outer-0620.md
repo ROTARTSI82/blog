@@ -1,5 +1,5 @@
 ---
-title: 'Inner and Outer Products'
+title: 'inner and outer products'
 created: 'Jun 20 2025'
 subhead: "Mathposting! Geometric view of the wedge product, matrix determinants, cross product, etc. Bonus tidbit about Generalized Stokes too."
 tags: "mathposting"

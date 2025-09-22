@@ -21,7 +21,7 @@
 }
 
 .blog-tikz-done>svg {
-  @apply m-auto;
+  @apply m-auto mt-3;
 }
 
 .pfp {

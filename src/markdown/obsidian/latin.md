@@ -1,5 +1,5 @@
 ---
-title: 'Notes & Translations for AP Latin (+ other latins)'
+title: 'notes & translations for ap latin (+ other latins)'
 modified: "Jan 30 21:21:44 2024" 
 created: "Aug 23 20:51:18 2022"
 tags: "hide-ls"

@@ -1,5 +1,5 @@
 ---
-title: "Various Journals"
+title: "various journals"
 created: "Jun 16 2025"
 tags: "hide-ls,hide-dir"
 ---

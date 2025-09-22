@@ -1,5 +1,5 @@
 ---
-title: 'Newsjournals and Features Journals'
+title: 'newsjournals and features journals'
 modified: "Mar 14 21:55:09 2023" 
 created: "Aug 31 09:04:18 2022"
 tags: "hide-ls"

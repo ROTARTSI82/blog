@@ -1,5 +1,5 @@
 ---
-title: 'Notes for Differential Equations'
+title: 'notes for differential equations'
 modified: "Apr 29 09:21:30 2024" 
 created: "Jan 30 22:02:32 2024"
 ---

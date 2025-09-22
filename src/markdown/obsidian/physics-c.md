@@ -1,5 +1,5 @@
 ---
-title: 'Notes for AP Physics C'
+title: 'notes for ap physics c'
 created: "Aug 23 08:53:11 2024"
 modified: "Jun 16 2025"
 ---

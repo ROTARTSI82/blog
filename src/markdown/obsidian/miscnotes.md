@@ -1,5 +1,5 @@
 ---
-title: 'Miscellaneous Notes'
+title: 'miscellaneous notes'
 created: "Jun 16 2025"
 tags: "hide-ls"
 ---

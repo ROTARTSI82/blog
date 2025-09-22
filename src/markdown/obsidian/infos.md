@@ -1,5 +1,5 @@
 ---
-title: "Notes for Info Theory"
+title: "notes for info theory"
 created: "September 10 2024"
 tags: "notes"
 ---
