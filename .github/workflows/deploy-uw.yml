@@ -1,0 +1,19 @@
+name: deploy-uw.yml
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deployuw:
+    name: deployuw
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run build
+      - run: ssh-keyscan granty29.vergil.u.washington.edu >> ~/.ssh/known_hosts
+      - run: echo "${{ secrets.PUB_DEPLOY_KEY }}" > ~/.ssh/id_rsa.pub
+      - run: echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+      - run: rsync -aimPz public_html/ granty29@granty29.vergil.u.washington.edu:~/public_html/
