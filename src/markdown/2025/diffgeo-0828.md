@@ -63,7 +63,8 @@ gradient, but first we need some machinery.
 
 ## Category Stuff
 We can consider this $T$ to be an endofunctor on the category of smooth manifolds (fun fact: [it is a monad](https://arxiv.org/abs/1401.0940)).
-The tangent space endofunctor takes manifolds $M$ to their tangent space $TM$, and it takes smooth maps $F: M\to N$ to their **differential** $\mathrm{d}F : T M \to T N$.
+The tangent space endofunctor takes manifolds $M$ to their tangent space $TM$, and it takes smooth maps $F: M\to N$ to their **differential** ${d}F : T M \to T N$.
+Restricting to a point, you can also consider $T_p$ to be a functor from the category of smooth manifolds to the category of vector spaces.
 
 ```tikz
 \usepackage{tikz-cd}
@@ -75,13 +76,13 @@ The tangent space endofunctor takes manifolds $M$ to their tangent space $TM$, a
 	TM & TN
 	\arrow["F", from=1-1, to=1-2]
 	\arrow["f", dashed, from=1-2, to=1-3]
-	\arrow["\mathrm{d}F", from=2-1, to=2-2]
+	\arrow["{d}F", from=2-1, to=2-2]
 \end{tikzcd}
 \end{document}
 ```
 For all $v_p \in TM$ and all scalar fields $f : N \to \mathbb{R}$, we have
 $$
-v_p(f \circ F) = \mathrm{d}F(v_p)(f).
+v_p(f \circ F) = {d}F(v_p)(f).
 $$
 If $v_p$ is a tangent vector base pointed at $p \in M$, then $\mathrm dF(v_p)$ must be a tangent vector base pointed at $F(p) \in N$.
 This is called a **pushforward** since we are pushing a tangent vector forward from the domain of $F$ to its codomain.
@@ -95,6 +96,13 @@ and we actually have a contravariant functor (aka a functor to the opposite cate
 manifolds and maps between them to the category of vector spaces and linear operators. Again, this is a
 *contravariant* functor because if $H = F \circ G$, then $H^\ast = G^\ast \circ F^\ast$.
 
+Because $T^\ast M$ is dual to $TM$, a map $F: M \to N$ also defines a pullback $dF^\ast : T^\ast N \to T^\ast M$, 
+which is just the transpose of the differential. For all vectors $v_p \in T_p M$ and covectors $\omega \in T^\ast_{F(p)} N$,
+we have
+$$
+\omega (dF_p(v_p)) = dF^\ast_{F(p)}(\omega)(v_p).
+$$
+
 The fact that $T$ is a functor also gives us a nice interpretation of $\pi$ in general as a natural transformation
 $\pi : T \to \textbf{1}_{\text{Diff}}$, since we have the commutative square:
 ```tikz
@@ -104,7 +112,7 @@ $\pi : T \to \textbf{1}_{\text{Diff}}$, since we have the commutative square:
 	TM & M \\
 	TN & N
 	\arrow["{\pi_M}", from=1-1, to=1-2]
-	\arrow["{\mathrm{d}F}"', from=1-1, to=2-1]
+	\arrow["{{d}F}"', from=1-1, to=2-1]
 	\arrow["F"', from=1-2, to=2-2]
 	\arrow["{\pi_N}", from=2-1, to=2-2]
 \end{tikzcd}\end{document}
@@ -149,7 +157,7 @@ $$
 $$
 
 Another thing we can now do is compute the **velocity vector** of a curve $\gamma : J \to M$ (where $J \subseteq \mathbb R$)
-at some point $\gamma(t_0)$ for some $t_0 \in J$. We use the differential $\mathrm{d}\gamma : T J \to T M$ (but we really only
+at some point $\gamma(t_0)$ for some $t_0 \in J$. We use the differential ${d}\gamma : T J \to T M$ (but we really only
 care about $T_{t_0} J$), and since
 $T J \subseteq T \mathbb R$, elements of $T_{t_0} J$ are just some multiple of the basis vector $\left. \frac{\mathrm{d}}{\mathrm{d}t} \right|_{t_0}$.
 Thus, we write
@@ -197,6 +205,7 @@ $$
 \mathcal L_V W = [V, W] = VW - WV.
 $$
 
+See theorem 9.38 on pg. 229, and please explain it to me if you understand. 
 But how is the Lie bracket a vector field? Since vector fields take scalar fields to scalar fields, we are 
 allowed to apply a second vector field. For example, $V(W f)$ is a scalar field, but the map $f \mapsto V(W f)$ 
 is *not* a vector field, since it does not follow the product rule. The Lie bracket commutator combination thingy, however,
@@ -206,7 +215,7 @@ by $VW - WV$, I mean the vector field that takes $f : M \to \mathbb R$ to $V (W 
 ## Lie Groups
 
 A Lie group is a manifold $G$ that is also a group: it has smooth maps for group multiplication $G \times G \to G$
-and inverses $G \to G$. Consequently, for all $g \in G$, we can define a smooth left-rotation map $L_g(h) = g h$.
+and inverses $G \to G$. Consequently, for all $g \in G$, we can define a smooth left-translation map $L_g(h) = g h$.
 We can study vector fields on $G$, and there are special **left-invariant** vector fields that do not change
 after applying $dL_g$ for all $g\in G$. That is, $X : G \to TG$ is left-invariant if $dL_g(X(h)) = X(gh)$ for all 
 $g, h \in G$.
@@ -214,4 +223,9 @@ It turns out that these vector fields form a vector space, called
 the **Lie algebra** of $G$. 
 
 This vector space is isomorphic to $T_e G$, where $e$ is the identity of the group. This is because choosing the 
-value of $X(e)$ will automatically set $X(g) = dL_g(X(e))$ and determine the entire vector field. See pg. 191.
+value of $X(e)$ will automatically set $X(g) = dL_g(X(e))$ and determine the entire vector field. See theorem 8.37 on pg. 191 for a
+proof that this is a bijective map between $T_e G$ and the space of left-invariant vector fields.
+
+The exponential map of a vector in $T_e G$ is then given by taking the flow from the identity along the corresponding left-invariant vector field for
+one time step.
+
