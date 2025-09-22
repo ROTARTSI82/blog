@@ -23,5 +23,3 @@ jobs:
       - run: rsync -aimPz public_html/ granty29@granty29.vergil.u.washington.edu:~/public_html/
       - run: rm -rf ~/.ssh
         if: always()
-      - uses: withastro/action@v3
-        if: always()

@@ -25,7 +25,14 @@ export async function getStaticPaths() {
     return cursor;
   }
 
-  return fulls.union(partials).keys().map(str => {
+  // full.union(partials) fails to compile on some old versions for some godforsaken reason
+  let union = new Set<string>();
+  for (const part of fulls)
+    union.add(part)
+  for (const part of partials)
+    union.add(part)
+
+  return union.keys().map(str => {
     const post = resolve(str, paths);
     return {
       params: { slug: str },
