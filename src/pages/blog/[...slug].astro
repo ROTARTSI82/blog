@@ -25,14 +25,7 @@ export async function getStaticPaths() {
     return cursor;
   }
 
-  // full.union(partials) fails to compile on some old versions for some godforsaken reason
-  let union = new Set<string>();
-  for (const part of fulls)
-    union.add(part)
-  for (const part of partials)
-    union.add(part)
-
-  return union.keys().map(str => {
+  return fulls.union(partials).keys().map(str => {
     const post = resolve(str, paths);
     return {
       params: { slug: str },
@@ -42,7 +35,7 @@ export async function getStaticPaths() {
 }
 
 type Props = CollectionEntry<'blog'>;
-let { post, leaf } = Astro.props as MDProps;
+let { post, leaf } = Astro.props as unknown as MDProps;
 const { slug } = Astro.params;
 const { Content } = await render(post);
 
