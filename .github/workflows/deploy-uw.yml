@@ -24,6 +24,7 @@ jobs:
       - run: ssh-keyscan granty29.vergil.u.washington.edu >> ~/.ssh/known_hosts
       - run: echo "${{ secrets.PUB_DEPLOY_KEY }}" > ~/.ssh/id_rsa.pub
       - run: echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+      - run: chmod 600 ~/.ssh/id_rsa
       - run: rsync -aimPz public_html/ granty29@granty29.vergil.u.washington.edu:~/public_html/
       - run: rm -rf ~/.ssh
         if: always()
