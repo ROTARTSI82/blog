@@ -1,0 +1,170 @@
+%-------------------------
+% Resume in LateX
+% Author : Sourabh Bajaj
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,12pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{} % Clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+% \addtolength{\oddsidemargin}{-0.5in}
+% \addtolength{\evensidemargin}{-0.5in}
+% \addtolength{\textwidth}{1in}
+% \addtolength{\topmargin}{-.5in}
+% \addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure that generate PDF is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{: #2 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumePoint}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }}
+
+% Just in case someone needs a heading that does not need to be in a list
+\newcommand{\resumeHeading}[4]{
+    \begin{tabular*}{0.99\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubItem}[2]{\resumeItem{#1}{#2}\vspace{-4pt}}
+
+\renewcommand{\labelitemii}{$\circ$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING-----------------
+\begin{tabular*}{\textwidth}{l @{\qquad} r @{\extracolsep{\fill}} r}
+  \textbf{{\Large Grant Yang}} &  & \href{tel:+4085684549}{(408) 568-4549} \\
+  \href{mailto:granty29@uw.edu}{granty29@uw.edu} & \href{https://github.com/ROTARTSI82}{github.com/ROTARTSI82} &  \href{https://students.washington.edu/granty29}{students.washington.edu/granty29}\\
+\end{tabular*}
+
+
+\section{Skills}
+\resumeSubHeadingListStart
+    \resumeItem{Technical}{Python, Numpy, PyTorch, C, C++, Rust, OpenGL, Java, TypeScript, ReactJS, TailwindCSS}
+    \resumeItem{Other}{Wolfram Mathematica, \LaTeX, Information Theory, LLMs and Transformer Architecture, Blender}
+\resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {University of Washington}{Seattle, WA}
+      {In progress: Bachelor of Science in Electrical and Computer Engineering}{2025 -- 2029}
+    \resumeSubheading
+      {Harker Upper School}{San Jose, CA}
+      {4.6/4.8 GPA}{2021 -- 2025}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\section{Leadership Experience}
+\resumeSubHeadingListStart
+\resumeItem{LinkCrew (2023-2024)}{Organized and led discussions and games for groups of 10-20 students for my school, serving as an ambassador for new students.}
+\resumeItem{Yearbook Editor (2022-2024)}{Managed reporters and planned coverage and content. Designed pages in Adobe InDesign, interviewed sources and took photos at events. Wrote an award-winning profile of one of my classmates (Best of SNO).}
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+  \resumeSubHeadingListStart
+  \resumeSubItem{\href{https://github.com/ROTARTSI82/chess}{C++ Chess Engine}}{Wrote a UCI chess engine that uses alpha-beta search to play chess. Implemented tricks including bitboards and multithreading.}
+      \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm}{Custom LLM}}
+      {From reading the literature on the subject, I implemented a transformer from scratch in PyTorch and trained a toy model on my text messages.}
+    \resumeSubItem{Robot Control}{Used a PID controller to drive a robot with Mecanum wheels, and implemented inverse kinematics to plan motions for a robot arm with 5 degrees of freedom.}
+    \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATCompilers}{Pascal Compiler}}
+      {Created a compiler for a custom Pascal dialect that targets MIPS32 assembly.}
+    \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS}{Neural Network}}
+      {Wrote and trained a network from scratch in Rust to perform image recognition.}
+    \resumeSubItem{4-bit Breadboard Computer}{Explored computer architecture by building a functional 4-bit computer from 7400-series integrated circuit chips. Programmed the computer with a custom instruction set to output the Fibonacci numbers.}
+  \resumeSubHeadingListEnd
+
+  % \resumeSubHeadingListStart
+
+  %   \resumeSubheading
+  %     {Google}{Mountain View, CA}
+  %     {Software Engineer}{Oct 2016 -- Present}
+  %     \resumeItemListStart
+  %       \resumeItem{TensorFlow}
+  %         {TensorFlow is an open source software library for numerical computation using data flow graphs; primarily used for training deep learning models. Worked on APIs and performance for training models on Tensor Processing Units (TPU).}
+  %       \resumeItem{Apache Beam}
+  %         {Apache Beam is a unified model for defining both batch and streaming data-parallel processing pipelines, as well as a set of language-specific SDKs for constructing pipelines and runners.}
+  %     \resumeItemListEnd
+
+% --------Multiple Positions Heading------------
+  %  \resumeSubSubheading
+  %   {Software Engineer I}{Oct 2014 -- Sep 2016}
+  %   \resumeItemListStart
+  %      \resumeItem{Apache Beam}
+  %        {Apache Beam is a unified model for defining both batch and streaming data-parallel processing pipelines}
+  %   \resumeItemListEnd
+
+%-------------------------------------------
+
+
+
+
+%-------------------------------------------
+\end{document}

@@ -1,33 +1,75 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import { link } from "../blog-util";
 import Layout from '../layouts/Layout.astro';
+import { Image } from "astro:assets";
+import headshot from '../assets/IMG_5896.JPG';
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
 <Layout title="Grant Yang - Home Page">
+	<style>
+		@import "tailwindcss";
+
+		#flex-links {
+			@apply flex flex-wrap justify-center;
+		}
+
+		#flex-links > span {
+			@apply m-auto mt-2;
+		}
+
+		#flex-container {
+			@apply flex flex-wrap;
+
+			> :first-child {
+				@apply mt-3;
+				flex: 0 1 25%;
+				min-width: 12rem;
+			}
+
+			> :last-child {
+				@apply pl-4;
+				flex: 1 0 60%;
+				max-width: 100%;
+			}
+		}
+	</style>
 	<h1>Grant Yang</h1>
-	<p>
-		Hi, this will be my new website! Check out my <a href={link("blog/")}>blog</a> for my mathposting.
-	</p>
+	<div id="flex-container">
+		<div>
+			<Image src={headshot} alt="headshot of me"/>
+		</div>
+		<div>
+		<p>
+			Hi! I am Grant, a first-year ENGRUD at the University of Washington, and I plan on studying electrical engineering.
+			You can find my mathposting on <a href={link("blog/")}>this blog</a>.
+			The current math-hole I'm exploring is differential geometry and category theory.
+		</p>
+		<p>You can also <a href={link("resume%20-%20Grant%20Yang.pdf")}>read my resume</a>.</p>
+		<div id="flex-links">
+			<span>Github: <a href="https://github.com/ROTARTSI82">ROTARTSI82</a></span>
+			<span>Discord: <code>rotartsi</code></span>
+			<span>Email: <code>granty29@uw.edu</code></span>
+		</div>
 
-	<p>
-		I am a first-year ENGRUD at the University of Washington and I plan on studying electrical engineering.
-	</p>
+		<hr/>
 
-	<p>
-		Github: <a href="https://github.com/ROTARTSI82">ROTARTSI82</a>&emsp;Discord: <code>rotartsi</code>&emsp;
-		Email: <code>granty29@uw.edu</code>
-	</p>
-
-	<hr/>
-
-	<h1>Tech Stack for this Website</h1>
-	<ul>
-		<li>Astro + React for SSG, Tailwind for styles.</li>
-		<li><a href="https://github.com/artisticat1/obsidian-tikzjax">artisticat1/obsidian-tikzjax</a> for rendering TikZ diagrams</li>
-		<li>Firebase for janky comments (lol)</li>
-	</ul>
+		<h1>Tech Stack for this Website</h1>
+		<p>
+			<a href="https://github.com/ROTARTSI82/blog/actions/workflows/deploy-uw.yml">
+				<img src="https://github.com/ROTARTSI82/blog/actions/workflows/deploy-uw.yml/badge.svg?branch=master"
+						 alt="deployment status"
+						 class="mb-1" />
+			</a>
+			The source code for this website can be found on GitHub at <a href="https://github.com/ROTARTSI82/blog">ROTARTSI82/blog</a>.
+		</p>
+		<ul>
+			<li>Astro + React for SSG, Tailwind for styles.</li>
+			<li><a href="https://github.com/artisticat1/obsidian-tikzjax">artisticat1/obsidian-tikzjax</a> for rendering TikZ diagrams</li>
+			<li>Firebase for janky comments (lol)</li>
+		</ul>
+		</div>
+	</div>
 </Layout>

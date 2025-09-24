@@ -29,9 +29,9 @@ th {
 }
 
 ul, ol {
-    @apply list-outside mt-2 ml-2 pl-6;
-    ul, ol {
-        @apply ml-6;
+    @apply list-outside mt-2 pl-6;
+    li {
+        @apply leading-tight ml-2;
     }
 }
 
