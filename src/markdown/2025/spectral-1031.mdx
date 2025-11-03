@@ -1,0 +1,324 @@
+---
+title: 'the spectral theorem - by agastya ravuri'
+created: '2025-10-31'
+subhead: "What the heck is a symmetric matrix?"
+tags: "mathposting,guest(aggs)"
+author: "Agastya Ravuri"
+---
+
+import img1 from "../../assets/2025/spectral/Pasted image 20250921210029.png"
+import { Image } from "astro:assets"
+
+<p style="text-align: center">_Post by Agastya Ravuri (aravuri@andrew.cmu.edu)_</p>
+
+Ideally, this post would be targeted at those who have just learned the basics of matrices and linear transformations in a first linalg class and are maybe just about to see the spectral theorem for symmetric matrices, or at someone who has seen the spectral theorem before but felt like they didn't understand what it was really saying (me).
+
+If my explanation of dual spaces/covectors ends up being too confusing, [eigenchris' Tensors for Beginners series](https://www.youtube.com/playlist?list=PLJHszsWbB6hrkmmq57lX8BV-o-YIOFsiG) is a great resource.
+
+Finally got this done on the most spectral night of the year.
+# Motivation
+
+Usually, when you hear someone state the spectral theorem, it's something like the following: If I have a symmetric $n\times n$ matrix, meaning it has the same values when reflected across its major diagonal ($A=A^T$), then the following things hold:
+
+1. It has $n$ eigenvalues (counting multiplicity)
+2. It can be diagonalized by an orthogonal matrix (i.e, a rotation or a reflection); in other words, its eigenvectors are orthogonal.
+
+When generalized to a complex matrix, we talk about a Hermitian (conjugate symmetric) $n\times n$ matrix instead, meaning it has the same values when reflected across its major diagonals and all the values are complex conjugated ($A=A^{\dagger}$). Then,
+
+1. It has $n$ eigenvalues (counting multiplicity), and they're all real numbers.
+2. It can be diagonalized by a unitary matrix (a matrix that preserves the complex dot product). In other words, its eigenvectors are "orthogonal."
+
+These turn out to be very useful statements: the spectral theorem is the reason why a multidimensional normal distribution will always have perpendicular major axes:
+
+
+<Image style="margin: auto; max-width: 50%;" src={img1} alt="graph of multivariable gaussian distribution"/>
+
+It's the reason why all physical objects, no matter how weirdly shaped, will always have three perpendicular principal axes they rotate around.
+
+import img2 from "../../assets/2025/spectral/Pasted image 20250921210301.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img2} alt="axes of rotation on a tennis racket"/>
+
+It's the reason why, for any (reasonable...) periodic function, I can write it as the sum of sine waves, and I can make that basis of waves orthonormal.
+
+It's the reason why all the quantum mechanical measurement operators have really nice properties, like how all their eigenstates are orthonormal (i think that one's kinda reversed from the others because we defined it like that, but...).
+
+With all these uses, the spectral theorem really starts to live up to its name: like a spectre, it influences many things we do from behind the scenes, and yet no mortal mind may comprehend what it means. 
+
+I would argue that the core of this confusion, at least for me, lay in the fact that I didn't really know what a symmetric matrix was. To me, the spectral theorem said that this arbitrary class of matrices has an eigenbasis of orthogonal vectors. That's a pretty cool property, but why would a matrix representing some linear transformation I randomly come across happen to be symmetric? 
+
+Overall, I want this post to bridge the gap between two intuitions for the spectral theorem, so keep these in mind:
+1. The eigenvectors from the spectral theorem have something to do with maximization in a direction: For example, the principal axes of rotational inertia of an object are the directions with the maximum and minimum resistance, and the directions of these axes are the maximum and minimum covariance—can this be generalized?
+2. The eigenvectors from the spectral theorem are orthogonal. 
+
+It turns out that both these properties are intimately related to the dot product, or, more generally, *a* dot product—as we'll see, you can't define "maximized in a direction" or "orthogonal" without it. This post seeks to give a deeper understanding of what a dot product is, and seeks to explain the "symmetric" property in that context. We will see how the spectral theorem is really a statement relating two dot products, and then present what is effectively the standard textbook proof of the spectral theorem except with this context in mind.
+
+
+> Note: this post will only talk about the spectral theorem for real  symmetric matrices, which is its most used form; I assume there's a similar argument for all normal matrices (the full class of unitarily diagonalizable matrices), but it's probably more involved.
+
+# Dot Products
+
+In $\mathbb{R^2}$, the standard dot product is given by 
+$$
+\begin{bmatrix}
+v_{1} \\
+v_{2} 
+\end{bmatrix}\cdot \begin{bmatrix}
+w_{1} \\
+w_{2} 
+\end{bmatrix}=v_{1}w_{1}+v_{2}w_{2},
+$$
+but there are two problems with this definition. 
+
+First, this definition is basis-dependent, and we don't really like that. If I was using a different basis of $\mathbb{R^2}$, the dot product wouldn't look like this. For example, if my basis was
+$$
+S=\left\{\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}, \begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\right\},
+$$
+then notice that 
+$$
+\left(\begin{bmatrix}
+v_{1} \\
+v_{2}
+\end{bmatrix}\right)_{S}\cdot\left(\begin{bmatrix}
+w_{1} \\
+w_{2}
+\end{bmatrix}\right)_{S}=\left(v_{1}\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}+v_{2}\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\right)\cdot\left(w_{1}\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}+w_{2}\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\right)
+$$
+$$
+=v_{1}w_{1}\left(\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}\cdot
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}\right)+v_{1}w_{2}\left(\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}\cdot
+\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\right)+v_{2}w_{1}\left(\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\cdot
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix}\right)+v_{2}w_{2}\left(\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\cdot
+\begin{bmatrix}
+1 \\
+1
+\end{bmatrix}\right)
+$$
+$$
+=v_{1}w_{1}+v_{1}w_{2}+v_{2}w_{1}+2v_{2}w_{2},
+$$
+which doesn't match up.
+
+A lot of the time we find that it's simpler to work in a weird basis, but the cost of this is that the dot product might not work how it normally does.
+
+Second, the dot product is a way of encoding similarity between vectors: it's positive when they're aligned, 0 when they're perpendicular, and negative when they are misaligned. However, we sometimes find that there are two different useful ways of thinking about similarity, and if you choose a basis where one of them is the standard dot product, the other looks completely screwed up.
+
+Instead, then, we say that a dot product is a "positive-definite symmetric bilinear form." Let's go through what this means in reverse order, with $B$ representing the dot product:
+
+1. Bilinear form: A function that takes in two vectors and returns a scalar and is linear in both arguments: $B(a\vec{v}+b\vec{w}, \vec{u})=aB(\vec{v},\vec{u})+bB(\vec{w},\vec{u})$ and $B(\vec{v}, a\vec{w}+b\vec{u})=aB(\vec{v},\vec{w})+bB(\vec{v},\vec{u})$.
+2. Symmetric: For all vectors $\vec{v}, \vec{w}$, $B(\vec{v}, \vec{w})=B(\vec{w}, \vec{v})$.
+3. Positive-definite: For all $\vec{v}$, $B(\vec{v}, \vec{v})\ge 0$, and $B(\vec{v},\vec{v})=0$ only if $\vec{v}=\vec{0}$.
+
+When looked at like a product, these properties correspond to the distributivity of multiplication, commutativity of multiplication, and trivial inequality respectively. 
+
+There are two concepts that we use the dot product for—magnitude and orthogonality. We can translate these ideas to any other dot product. The squared magnitude of a vector is $\vec{v}\cdot \vec{v}$, so we can generalize this and say that the $B$-squared-magnitude of a vector is $B(\vec{v},\vec{v})$. Also we say that two vectors are orthogonal if $\vec{v}\cdot \vec{w}=0$, so we can say that vectors are $B$-orthogonal if $B(\vec{v}, \vec{w})=0$.
+
+Geometrically, we can visualize it like this—the unit sphere of the regular dot product (the set of all points where $\vec{v}\cdot \vec{v}=1$) is, of course, a sphere. In general, the unit sphere of an arbitrary dot product is some ellipsoid. If you don't have the requirement of positive-definiteness, the unit "sphere" can instead be some other 3D conic section, like a hyperboloid. 
+
+
+> Note: I'm going to be ignoring positive-definiteness for most of this post; it is important at one point (see if you can figure out where), but most of the time, feel free to think of the terms "dot product" and "symmetric bilinear form" interchangeably in this post.
+
+
+Mathematically, a bilinear form is completely determined by where it sends pairs of basis vectors. As a result, as a matrix, we can represent them as a "row vector of a row vector": for example, the standard dot product on $\mathbb{R}^3$ can be represented as the following:
+$$
+\left[[1\ 0\ 0]\ [0\ 1\ 0]\ [0\ 0\ 1]\right]
+$$
+Why? Let's see how we calculate $\vec{v}\cdot \vec{w}$. You can first apply it to a vector $\vec{v}$ using regular matrix multiplication:
+$$
+\left[[1\ 0\ 0]\ [0\ 1\ 0]\ [0\ 0\ 1]\right]\begin{bmatrix}
+v_{1} \\
+v_{2} \\
+v_{3}
+\end{bmatrix}=v_{1}[1\ 0\ 0]+v_{2}[0\ 1\ 0]+v_{3}[0\ 0\ 1]=[v_{1}\ v_{2}\ v_{3}]
+$$
+Then, you can apply *that* to $\vec{w}$, giving us a familiar formula.
+$$
+[v_{1}\ v_{2}\ v_{3}]\begin{bmatrix}
+w_{1} \\
+w_{2} \\
+w_{3}
+\end{bmatrix}=v_{1}w_{1}+v_{2}w_{2}+v_{3}w_{3}
+$$
+
+In general, the $j$th element of the $i$th row vector of the matrix representation of a dot product $B$, $b_{ij}$, represents $B(\vec{e}_{i},\vec{e}_{j})$, where $\vec{e}_{i}$ and $\vec{e}_{j}$ are the $i$th and $j$th standard basis vectors, respectively:
+$$
+\left[[b_{11}\ b_{12}\ b_{13}]\ [b_{21}\ b_{22}\ b_{23}]\ [b_{31}\ b_{32}\ b_{33}]\right]
+$$
+The symmetry property, then, means that $B(\vec{e}_{i},\vec{e}_{j})=B(\vec{e}_{j},\vec{e}_{i})$ for all $i$, $j$. In other words, the $j$th element of the $i$th row vector should be the same as the $i$th element of the $j$th row vector. This is suspiciously similar to the definition of a symmetric matrix $A_{ij}=A_{ji}$.
+# Currying
+
+This matrix representation is designed for multiplying with two vectors, but there's nothing stopping us with multiplying with one vector at a time. In fact, notice what we did with the standard dot product earlier:
+$$
+\left[[1\ 0\ 0]\ [0\ 1\ 0]\ [0\ 0\ 1]\right]\begin{bmatrix}
+v_{1} \\
+v_{2} \\
+v_{3}
+\end{bmatrix}=v_{1}[1\ 0\ 0]+v_{2}[0\ 1\ 0]+v_{3}[0\ 0\ 1]=[v_{1}\ v_{2}\ v_{3}]
+$$
+It converted the $\vec{v}$ column vector into a row vector! In fact, for the standard dot product specifically, it returned the transpose of $\vec{v}$!
+
+The dot product is usually viewed as a function $V \times V\to \mathbb{R}$, one that takes in two vectors and returns a real number. It's sometimes useful to instead look at the curried dot product, $g: V\to(V\to\mathbb{R})$, which is what we get when we apply the matrix once instead of twice. Basically, this is a function that takes in one vector, and then returns the single-variable function $g(\vec{v})=(\vec{w} \to \vec{v}\cdot \vec{w})$.
+
+We call the space of all linear functions $V\to\mathbb{R}$ the dual space of $V$, represented by $V^*$. We call elements of that space covectors, row vectors, or $1\times n$ matrices, which are terms that I'll use pretty interchangeably in this post.
+
+Geometrically, you can represent any covector as a set of parallel planes; then, to apply it to a vector, you count how many planes it crosses:
+
+import img3 from "../../assets/2025/spectral/Screenshot 2025-10-30 at 5.29.00 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img3} alt="graph of covectors"/>
+
+The kernel of a covector is the set of all vectors that it maps to zero. In this case, that's represented by the plane through the origin.
+
+As we've seen, a dot product $g$ is a transformation which takes in a vector and returns a covector. This transformation is actually invertible, which we can see with the standard dot product: for the standard dot product, $g$ will be the transpose of the column vector. This is clearly invertible, as if we take the transpose of the resulting row vector, we get back where we started.
+
+Of course, for other dot products they won't have such a nice representation, but in general, $g$ will convert a vector to a row vector and $g^{-1}$ will convert a row vector to a vector:
+
+import img4 from "../../assets/2025/spectral/Screenshot 2025-10-27 at 5.31.53 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img4} alt="graph of covectors"/>
+
+# Symmetric Matrices & Associated Linear Transformations
+
+Now that we have talked about dot products, we can think about what happens if I have two of them.  Let $f,g$ be dot products on $V$. We know that a dot product is an isomorphism between a vector space and its dual space, so we can draw the following diagram: 
+
+import img5 from "../../assets/2025/spectral/Screenshot 2025-10-27 at 5.32.09 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img5} alt="graph of covectors"/>
+
+We can think of $g$ and $f$ as two different embeddings of the vector space into its dual space. Consider the map $A=g^{-1}\circ f$, which takes $V\to V^*\to V$. This is just an automorphism on $V$ (in other words, a square matrix)! If we consider $g$ to be the standard dot product, we say that $g^{-1}\circ f$ is $f$'s "associated linear transformation (under $g$)". We call a matrix symmetric if it is the associated linear transformation of a symmetric bilinear form. Likewise, for a symmetric matrix, we say that its "associated symmetric bilinear form (under $g$)" is $g\circ A$.
+
+You can think of this by looking at the bilinear form's matrix representation. If $g$ is the standard dot product, and $f$ is some other dot product, represented by the matrix $$[[f_{11}\ f_{12}\ f_{13}]\ [f_{21}\ f_{22}\ f_{23}]\ [f_{31}\ f_{32}\ f_{33}]]$$
+, recalling that the inverse dot product is the inverse transpose, $A=g^{-1}\circ f$ can be represented as
+$$
+\begin{bmatrix}
+f_{11} & f_{21} & f_{31} \\
+f_{12} & f_{22} & f_{32} \\
+f_{13} & f_{23} & f_{33}
+\end{bmatrix}
+$$
+We know that the symmetry property of dot products means that $f_{ij}=f_{ji}$. We can finally see how the symmetry property of dot products relates to the symmetry property of matrices!
+
+How do we think about this transformation geometrically? Well, consider that $g(A\vec{v})(\vec{w})=g(g^{-1}(f(\vec{v}) )(\vec{w})=f(\vec{v})(\vec{w})$. The associated linear transformation, then, converts the $f$-dot product into the $g$-dot product. By symmetry of $g$, this works for both arguments ($g(A\vec{v})(\vec{w})=g(\vec{v})(A\vec{w})=f(\vec{v})(\vec{w})$).
+
+For geometric intuition on what $A$ does, first, you apply $f$ to $\vec{v}$, giving you a row vector, or a linear function on $V$; the kernel of this row vector, $\ker(f(\vec{v}))$, represents the set of all vectors that are $f$-orthogonal to $\vec{v}$. 
+
+import img6 from "../../assets/2025/spectral/Screenshot 2025-10-27 at 5.55.27 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img6} alt="graph of covectors"/>
+
+Then, when we apply $g^{-1}$ to $f(\vec{v})$, we ask "give me a vector that is $g$-orthogonal to this set."
+
+import img7 from "../../assets/2025/spectral/Screenshot 2025-10-27 at 5.56.37 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img7} alt="graph of covectors"/>
+
+Therefore, we can think of $A$ as translating between two representations of the plane $\ker(f(\vec{v}))$, the $f$-embedding and the $g$-embedding.
+
+Note: $g^{-1}\circ f$ will have a magnitude, dependent on the magnitude of the original $\vec{v}$ and how $g$ and $f$ measure length, but it turns out we don't have to think about it very much. In fact, if you think of vectors as simply their equivalence class under scalar multiplication (lines through the origin), that might help visually.
+# Eigenvectors
+
+What does an eigenvector of $g^{-1}\circ f$ represent? Unfolding the definition, we have that $\vec{v},\lambda$ are an eigenvector-eigenvalue pair iff $g^{-1}(f(\vec{v}))=\lambda \vec{v}$. Applying $g$ to both sides and using linearity, this is $f(\vec{v})=\lambda g(\vec{v})$. If I have two covectors and one is a scaled version of the other, that means the same thing as them having the same kernel (think about how geometrically a covector is parallel planes). As a result, we can rewrite this as $\ker(f(\vec{v}))=\ker(g(\vec{v}))$. In other words, $\vec{v}$ is an eigenvector of $g^{-1}\circ f$ if and only if $f$ and $g$ both agree on the space that is perpendicular to $\vec{v}$. 
+
+The standard statement of the spectral theorem is the following: Given a dot product $g$ and a symmetric matrix $A$ on $V$, there exists a $g$-orthogonal basis of $V$ such that $A$ is diagonal: each basis vector is an eigenvector.
+
+If we write this in terms of $f$, the associated bilinear form of $A$, using our interpretation of eigenvector, this is the same thing as the following: There exists a basis that is both $f$-orthogonal and $g$-orthogonal on $V$.
+
+In my opinion, this is pretty nice characterization. It turns out that there's a simple algorithm for constructing this basis, too, using the idea of maximization/minimization. Using this, we're finally ready for the proof of the spectral theorem.
+# The Spectral Theorem
+
+Consider the set of the vectors on the $g$-sphere, defined by $g(\vec{v},\vec{v})=1$. For each of those vectors, consider how $f$ measures them, $f(\vec{v},\vec{v})$. By the extreme value theorem (spheres are compact), there is some vector $\vec{v}$ on the $g$-sphere for which $f(\vec{v},\vec{v})$ is minimized. I claim that this vector $\vec{v}$ is an eigenvector of $A=g^{-1}\circ f$, or equivalently $\ker(f(\vec{v}))=\ker(g(\vec{v}))$. 
+
+The proof for this is pretty simple by using the idea of Lagrange multipliers. Imagine "blowing up" the $f$-sphere, $f(\vec{v},\vec{v})=k$, starting from $k=0$ and slowly increasing it.
+
+import img8 from "../../assets/2025/spectral/Screenshot 2025-10-29 at 2.34.07 PM.png";
+
+<Image style="margin: auto; max-width: 50%;" src={img8} alt="graph of covectors"/>
+
+The minimum will be the first value of $k$ for which $f$ hits the $g$ sphere, and $\vec{v}$ will be the point where it touches. At this point, $\ker(f(\vec{v}))$ is the plane tangent to the $f$-sphere at $\vec{v}$, and $\ker(g(\vec{v}))$ is the plane tangent to the $g$-sphere at $\vec{v}$. Clearly, the tangent spaces align at the extreme value (the principle of Lagrange multipliers), so $\ker(f(\vec{v}))=\ker(g(\vec{v}))$. Therefore, $\vec{v}$ is an eigenvector of $A$.
+
+Note: "Tangent space" actually doesn't depend on a dot product. By definition, the tangent space of a norm $f(\vec{v},\vec{v})$ are the directions for which that $f$-length is locally stationary when going along them ($\nabla_{\vec{w}}f(\vec{v},\vec{v})=0$); it turns out that this aligns with the definition of orthogonal ($f(\vec{v},\vec{w})=0$), which you can prove using calculus, the bilinearity property, and symmetry (note specifically how the last step hinges on symmetry!):
+$$
+\nabla_{\vec{w}}f(\vec{v},\vec{v})=0
+$$
+$$
+\lim_{ h \to{0} } \frac{1}{h}(f\left( \vec{v}+h\vec{w},\vec{v}+h\vec{w} \right)-f(\vec{v},\vec{v}))=0
+$$
+$$
+\lim_{ h \to{0} } \frac{1}{h}(f(\vec{v},\vec{v})+hf(\vec{v},\vec{w})+hf(\vec{w},\vec{v})+h^2f(\vec{w},\vec{w})-f(\vec{v},\vec{v}))=0
+$$
+$$
+\lim_{ h \to{0} } (f(\vec{v},\vec{w})+f(\vec{w},\vec{v})+hf(\vec{w},\vec{w}))=0
+$$
+$$
+f(\vec{v},\vec{w})+f(\vec{w},\vec{v})=0\implies 2f(\vec{v},\vec{w})=0\implies f(\vec{v},\vec{w})=0
+$$
+
+Ok, great! We've found one eigenvector of $A$. How do we find the rest of them, and prove they're all both $f$ and $g$-orthogonal to $\vec{v}$? Well, this also depends on the property of symmetry.
+
+Consider the set $\ker(f(\vec{v}))=\ker(g(\vec{v}))$. What is its image under $A=g^{-1}\circ f$? Well, let $\vec{w}$ be an arbitrary vector in that set. Because $w\in\ker(f(\vec{v}))$, by definition, $f(\vec{v}, \vec{w})=0$, or $\vec{v}, \vec{w}$ are $f$-orthogonal.
+
+Now, what is $\ker(f(\vec{w}))$? We don't know exactly, but by symmetry, we know $f(\vec{w},\vec{v})=0$, so $\ker(f(\vec{w}))$ must contain $\vec{v}$. From above, we know that $A=g^{-1}\circ f$ first takes a vector to its $f$-orthogonal plane, and then spits out a vector that is $g$-orthogonal to that plane. Ok, but if $A(\vec{w})$ is $g$-orthogonal to the plane $\ker(f(\vec{w}))$, and $\vec{v}\in\ker(f(\vec{w}))$, then $A(\vec{w})$ must surely be $g$-orthogonal to $\vec{v}$. But this is just the defining property of $A(\vec{w})$ being in $\ker(g(\vec{v}))$!
+
+What have we found? For any vector in $\ker(f(\vec{v}))$, $A$ takes it to $\ker(g(\vec{v}))$. But $\ker(f(\vec{v}))$ *equals* $\ker(g(\vec{v}))$—therefore, we have found that $A$, which used to be an automorphism $V\to V$, is also an automorphism $\ker(f(\vec{v}))\to\ker(f(\vec{v}))$ (one dimension lower!). 
+
+Now, we're basically done! If we repeat this process recursively, finding extreme values and then restricting to their orthogonal subspaces, we will end up with a basis of $V$ that is both $f$ and $g$-orthogonal.
+# Symmetry in Real Life
+
+This proof hinged on the fact that dot products being symmetric meant that orthogonality of vectors was a symmetric relation. I hope that makes it easier to imagine why matrices we see in nature might be symmetric—they encode some kind of symmetric relation.
+
+I think it's easiest to see this in the covariance case: If I have two random variables $X$ and $Y$, then $\text{Cov}[X,Y]=0$ if and only if $X$ and $Y$ are independent. This should, pretty clearly, be symmetric: if $X$ and $Y$ are independent, then surely $Y$ and $X$ are too. As a result, the spectral theorem holds.
+
+Moment of inertia is a little harder. There are two main formulas that involve the moment of inertia in physics (three, but the third is just the time derivative of the first): In two-dimensions, we can write $L=Iw$ and $K=\frac{1}{2}I\omega^2$ where those are all scalars ($L$=angular momentum, $I$=moment of inertia, $\omega=$angular velocity, $K$=rotational kinetic energy).  Generalizing to three dimensions, $I$ is some linear transformation where $\vec{L}=I\vec{w}$, and $K=\frac{1}{2}(I\vec{\omega})\cdot (\vec{\omega})$.
+
+If we write the kinetic energy formula using our new funny dot product notation, $K=\frac{1}{2}g(I\vec{w})(\vec{w})$, or, if we examine $I$'s associated bilinear form $f$, we have $g\circ I=f\iff I=g^{-1}\circ f$, and $K=\frac{1}{2}f(\vec{w},\vec{w})$. Cool! Moment of inertia is just some 2-norm that "measures" angular velocity and spits out kinetic energy. All 2-norms can be naturally represented as a symmetric bilinear form, which is the unique bilinear form that agrees with the norm and has the property that "$f$-orthogonal" aligns with the tangent space of $f(\vec{v},\vec{v})$, which is very useful (see the note from the spectral theorem proof above). Now all you have to ask is why moment of inertia is a 2-norm in the first place, which is a physics question that I don't know the answer to (is it because doubling angular velocity doubles velocity of all the particles which quadruples kinetic energy? probably. why is energy proportional to velocity squared in the first place? God probably knows. I read [this one post](https://physics.stackexchange.com/questions/535/why-does-kinetic-energy-increase-quadratically-not-linearly-with-speed) about how it comes from Galilean invariance). Anyway, this 2-norm idea is probably the most common reason that symmetric matrices show up in physics. For example, the stress tensor is symmetric. Why? It takes in strain and spits out the stress and $\sigma \cdot \varepsilon$ is energy density, just as moment of inertia takes in angular velocity and spits out angular momentum and $L\cdot \omega$ is energy. (i think. i don't know much about continuum mechanics so don't quote me on this one). 
+
+The Fourier transform is also kind of hard. It's common knowledge that the waves from the Fourier transform are the eigenfunctions of the laplacian on $\frac{\mathbb{R}}{\mathbb{Z}}$, which is a circle, and all the waves happen to be orthogonal with respect to the inner product $\int f(x)\cdot g(x) \, dx$. Why is the laplacian (the second derivative) symmetric w.r.t. this dot product? Well, you can do the math and do integration by parts twice: 
+$$
+\int \left( \frac{\partial^2f}{\partial x^2} \right)\, (g)dx=-\int \left( \frac{\partial f}{\partial x} \right)\,  \left( \frac{\partial g}{\partial x} \right)dx=\int \left(f\right)\, \left( \frac{\partial^2g}{\partial x^2} \right)dx,
+$$
+because a circle has no boundary so the $uv$ term vanishes. So yeah, you can see that the bilinear form $\int \left( \frac{\partial^2f}{\partial x^2} \right)\, (g)dx$ is in fact symmetric, but I have no intuition for why or what maximizing this means. I guess my best guess would be looking at that middle term in the above derivation? You're basically doing the dot product on the derivative and maximizing that? What does that have to do with harmonics? If somebody who knows more reads this please help.
+
+As for quantum mechanical operators being Hermitian... yeah sorry I can't help you. I think that one mostly comes from asserting the Born rule?
+
+Anyway, those are a couple examples of where the spectral theorem would show up. There are many more (the generalized second derivative test, spectral graph theory, etc.), but I hope this article and associated proof has given an intuition for why something might be symmetric and why the spectral theorem would apply to allow you to find extreme perpendicular values.
+
+I'll probably make a sequel about the SVD and how it generalizes the spectral theorem not just to square normal matrices but to all linear transformations between inner product spaces.

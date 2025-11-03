@@ -2,13 +2,14 @@
 import '../styles/global.css';
 import {link} from "../blog-util";
 
-const { title, ogtype } = Astro.props;
+const { title, ogtype, author } = Astro.props;
 import favicon from "../assets/favicon.ico";
 import { FirebaseLoader } from "../firebase-util";
 
 interface Props {
 	title: string,
-	ogtype?: string
+	ogtype?: string,
+	author?: string
 }
 
 ---
@@ -19,9 +20,9 @@ interface Props {
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/ico" href={favicon} />
 		<meta name="generator" content={Astro.generator} />
-		<meta property="og:site_name" content="Grant's Site" />
+		<meta property="og:site_name" content="Grant's Blog" />
 		<meta property="og:title" content={title} />
-		<meta property="og:author" content="Grant Yang" />
+		<meta property="og:author" content={author ?? "Grant Yang"} />
 		<meta property="og:url" content={Astro.url} />
 		<meta name="google-site-verification" content="uM_FoRW8KoxLD0HAFjxIxT_LU04jzu2y0jVkXhsY2EI" />
 		<meta property="og:type" content={ogtype ?? "website"} />

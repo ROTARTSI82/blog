@@ -42,3 +42,11 @@
 :not(.astro-code) > code {
   @apply bg-gray-200 rounded-md px-1 py-0.5 text-sm;
 }
+
+.yt-embed > iframe {
+  @apply m-auto rounded-sm my-1;
+}
+
+blockquote {
+  @apply border-s-4 border-gray-500 ml-4 pl-2 pb-1 text-gray-900 italic;
+}
