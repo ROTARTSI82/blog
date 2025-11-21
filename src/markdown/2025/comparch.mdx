@@ -1,0 +1,191 @@
+---
+title: 'computer architecture'
+created: 'May 12 2025'
+tags: 'hide-ls'
+---
+
+import { Image } from "astro:assets"
+import ca1 from "../../assets/2025/comparch1.webp"
+import ca2 from "../../assets/2025/comparch2.webp"
+import ca3 from "../../assets/2025/comparch3.webp"
+import cao from "../../assets/2025/comparch_oscil.webp"
+
+# Computer Architecture Gallery
+
+4-bit breadboard computer based on the following paper:
++ Feinberg, D. (2007). A simple and affordable TTL processor for the classroom. Computer Science Education, 17(2), 107–116. https://doi.org/10.1080/08993400601165412
+
+
+| Stage 1 | Stage 2 | Done! |
+| --- | -- | -- |
+<Image src={ca1} alt="first stage of building"/> | <Image src={ca2} alt="second stage of building"/> | <Image src={ca3} alt="completed computer"/> |
+
+
+<span/>
+<Image style="margin: auto; max-width: 50%;" src={cao} alt="555 on the oscilloscope"/>
+<div style="margin: auto; text-align: center;">An oscilloscope trace of the 555 timer on the board.</div>
+
+
+## Scuffed Emulator
+This emulator simulates a program on the computer and finds the period of the execution (since we only have
+a few bits of state). I wonder if we can find a busy beaver for this thing...
+```python
+def nez(x, bit):
+    return 1 if x & (1<<bit) != 0 else 0
+
+def bin4(x):
+    return bin(x | 4096)[-4:]
+
+def hex4(x, n=2):
+    return hex(x | 4096)[-n:]
+
+class Instruction:
+    def __init__(self, name, op, control):
+        self.name = name
+        self.op = op
+        self.control = control
+
+        self.alu = control >> 4
+        self.m = nez(control, 3)
+        self.cn = nez(control, 4)
+        self.acc = nez(control, 2)
+        self.rw = nez(control, 1)
+        self.pc = nez(control, 0)
+
+        globals()[str(self)] = self
+
+    def __str__(self):
+        return self.name[0]
+
+    def info(self):
+        return f"{hex4(self.op)} op[{bin4(self.op)}] -> " + \
+            f"{hex4(self.control)} sel={nez(self.op, 0)} " + \
+            f"alu[{bin4(self.alu)},m={self.m},cn={self.cn}] " + \
+            f"acc={self.acc} rw={self.rw} pc={self.pc}"
+
+    def __call__(self, *const):
+        if len(const) > 0 and not nez(self.op, 0) == 0:
+            # print("warn: only immediate-type instructions take args")
+            pass
+        return AsmLine(self, const[0] if len(const) > 0 else 0)
+
+class AsmLine:
+    def __init__(self, instr, const):
+        self.instr = instr
+        self.const = const
+
+    def __str__(self):
+        if self.instr.name[0].endswith('i'):
+            return f"{hex4(self.instr.op << 4 | self.const)} | {bin4(self.instr.op)}" + \
+                f" {bin4(self.const)}\t{self.instr} {self.const}"
+        return f"{hex4(self.instr.op << 4)} | " + \
+            f"{bin4(self.instr.op)} 0000\t{self.instr} *addr"
+
+    def pseudocode(self):
+        return self.instr.name[1] % \
+            (self.const if self.instr.name[0].endswith('i') else '*addr')
+
+control = [0xAA, 0x92, 0x62, 0xFC, 0xFE, 0xCF, 0x0F]
+names = [("load", 'a = (addr:=%s)'),
+    ("add", 'a += (addr:=%s)'),
+    ("sub", 'a -= (addr:=%s)'),
+    ("store", '*(addr:=%s) = a'),
+    ("read", 'addr = %s'),
+    ("jmp", 'pc = (addr:=%s)'),
+    ("jez", 'pc=(addr:=%s) if a == 0')]
+
+alus = {0b1010_10: lambda a,b: b, 0b1001_01: lambda a,b: a+b,
+    0b0110_00: lambda a,b: a-b, 0b1111_11: lambda a,b: a,
+    0b1100_10: lambda a,b: 0b1111, 0b0000_10: lambda a,b: ~a}
+
+instructions = []
+opcode = 0
+for ctl, name in zip(control, names):
+    instructions.append(Instruction((name[0]+'i', name[1]), opcode, ctl))
+    instructions.append(Instruction(name, opcode+1, ctl))
+    opcode += 2
+
+for i in instructions:
+    # print(f"{str(i)} {i.name[1]%'ARG'}")
+    print('\t', i.info())
+
+
+class Chump:
+    def __init__(self, prog, pc=0, acc=0, addr=0):
+        self.pc = pc
+        self.acc = acc
+        self.addr = addr
+
+        self.prog = prog
+        self.ram = [0 for i in range(16)]
+        self.ticks = 0
+        self.states = dict()
+
+    def clock(self):
+        state = (self.pc, self.acc, self.addr, tuple(self.ram))
+        if state in self.states:
+            print(f"Repeated after {self.ticks} (previously on tick {self.states[state]})")
+            return False
+        self.states[state] = self.ticks
+
+        cur = self.prog[self.pc]
+
+        greenpre = self.ram[self.addr] if cur.instr.op & 1 else cur.const
+
+        idx = cur.instr.alu << 2 | cur.instr.m<<1 | cur.instr.cn
+        alu = alus[cur.instr.alu << 2 | cur.instr.m << 1 | \
+                cur.instr.cn](self.acc, greenpre) & 0b1111
+        if cur.instr.acc == 0:
+            self.acc = alu
+        self.addr = greenpre
+        if cur.instr.rw == 0:
+            self.ram[self.addr] = self.acc
+        if cur.instr.pc and alu == 0b1111:
+            self.pc = greenpre
+        else:
+            self.pc += 1
+        print(f'{self.ticks:<5}\t{bin4(self.acc)} {self.acc:<2} " + \
+              f"pc={self.pc:<6} after {cur.pseudocode()}')
+        self.ticks += 1
+        return True
+        # print(self.ram, self.addr)
+
+def prog2bin(prog):
+    return [i.instr.op << 4 | i.const for i in prog]
+
+def bin2prog(bin):
+    return [instructions[i >> 4](i & 0b1111) for i in bin]
+
+nop = loadi(0)
+
+progtest = [
+    loadi(1),
+    storei(0), # A [N]
+    storei(1), # B [N-1]
+
+    readi(0),
+    load(),
+    readi(1),
+    add(),
+    storei(1), # 1 is now A+B [N+1]
+
+    readi(0),
+    add(),
+    storei(0), # 0 is now A+(A+B) [N+2]
+
+    jmpi(3)
+]
+
+
+print('\n\nno.mem\tv  | 4321 4321')
+for idx, i in enumerate(progtest):
+    print(f"{str(idx + 100000)[-2:]}.{hex4(idx)}\t{str(i):<32} {i.pseudocode():<20}")
+
+print()
+
+chump = Chump(bin2prog([0x01, 0x60, 0x61, 0x80, 0x10, 0x81, 0x30,
+        0x62, 0x80, 0x10, 0x61, 0x82, 0x10, 0x60, 0xa3]))
+
+while chump.clock():
+    pass
+```

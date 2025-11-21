@@ -3,9 +3,18 @@ import { link } from "../blog-util";
 import Layout from '../layouts/Layout.astro';
 import { Image } from "astro:assets";
 import headshot from '../assets/IMG_5896.JPG';
+import {getCollection} from "astro:content";
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+
+const posts = (await getCollection('blog'))
+	.filter(p => (p.data.tags ?? "")
+		.split(',').includes('featured'))
+	.sort((a, b) =>
+		b.data.created.valueOf() - a.data.created.valueOf());
+const opt: Intl.DateTimeFormatOptions = {year: 'numeric', month: 'short', day: '2-digit'};
+
 ---
 
 <Layout title="Grant Yang - Home Page">
@@ -35,11 +44,16 @@ import headshot from '../assets/IMG_5896.JPG';
 				max-width: 100%;
 			}
 		}
+
+		.space-apart > li {
+			@apply mt-1;
+		}
+
 	</style>
 	<h1>Grant Yang</h1>
-	<div id="flex-container">
+	<div> <!-- id="flex-container" -->
 		<div>
-			<Image src={headshot} alt="headshot of me"/>
+			<!-- <Image src={headshot} alt="headshot of me"/> -->
 		</div>
 		<div>
 		<p>
@@ -53,6 +67,50 @@ import headshot from '../assets/IMG_5896.JPG';
 			<span>Email: <code>granty29@uw.edu</code></span>
 		</div>
 
+		<hr/>
+
+		<h1>Highlighted Blog Posts</h1>
+		<ol>
+			{posts.map((post) => <li>
+					{post.data.created.toLocaleDateString(undefined, opt)}
+					<!--<code class="ml-auto">{path.join('/')}/</code>-->
+					<a href={link(`/blog/${post.id}/`)}>
+						{post.data.title}
+					</a>
+					<!-- <span>{post.data.subhead ?? ""}</span> -->
+				</li>
+			)}
+		</ol>
+		<hr/>
+
+		<h1>Projects & Demos</h1>
+		<ul class="space-apart">
+			<li>
+				<a href="https://github.com/ROTARTSI82/Chess">ROTARTSI82/Scacus</a>: A UCI chess engine written in C++,
+				with magic bitboards and multithreading. Supports both normal chess and the anti-chess variant,
+				rated at about ~1600 Lichess ELO in chess.
+			</li>
+			<li><em>ROTARTSI82/ATCS</em>
+				<ul>
+					<li>
+						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATCompilers">ATCompilers</a>: A compiler for
+						a custom Pascal dialect targeting MIPS32 assembly, written in Java.
+					</li>
+					<li>
+						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm">LLM</a>:
+						Trained a custom 40M-parameter character-level transformer on my text messages.
+						The transformer was implemented from scratch in PyTorch, and I performed a scaled-up training run of
+						a 150M-parameter model on UW's Hyak Klone supercomputer cluster.
+					</li>
+					<li>
+						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATNeural">ATNeural</a>: A toy neural network for
+						digit recognition written in Rust, implementing backprop and the ADAM optimizer.
+					</li>
+				</ul>
+			</li>
+			<li><a href={link("camera-sim/")}>WebGL Ray Tracer with GLSL</a></li>
+			<li><a href={link("blog/2025/comparch/")}>4-Bit Breadboard Computer</a></li>
+		</ul>
 		<hr/>
 
 		<h1>Tech Stack for this Website</h1>

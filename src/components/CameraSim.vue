@@ -20,15 +20,16 @@ uniform float frame;
 
 uniform sampler2D prevFrame;
 
-int rng(inout int state) {
+uint rng(inout uint state) {
     state ^= state << 13;
     state ^= state >> 17;
     state ^= state << 5;
     return state;
 }
 
-float rngf(inout int state) {
-    return abs(fract(float(rng(state)) / 3599470.1437130086));
+float rngf(inout uint state) {
+    return float(rng(state)) * (1.0 / 4294967296.0);
+    // return abs(fract(float(rng(state)) / 3599470.1437130086));
 }
 
 float square(float v) {
@@ -67,7 +68,7 @@ struct Sphere {
 };
 
 const int NUM_SPHERES = 4;
-const Sphere spheres[4] = Sphere[NUM_SPHERES](
+Sphere spheres[4] = Sphere[NUM_SPHERES](
     Sphere(vec3(0.0,0.0,-5.0), 1.0, Material(vec3(1.0, 0.01, 0.01), vec3(0.0,0.0,0.0), vec3(0.1), 0.5, 0.5)),
     Sphere(vec3(-1.46,0.416,-2.918), 0.598, Material(vec3(0.01, 1.0, 0.01), vec3(0.0,0.0,0.0), vec3(1.0, 0.8, 0.1), 0.5, 0.5)),
     Sphere(vec3(2.187,-1.099,-7.216), 0.598, Material(vec3(0.01, 0.01, 1.0), vec3(0.0,0.0,0.0), vec3(0.1), 0.5, 0.5)),
@@ -78,8 +79,14 @@ const float FAR_CLIP = 1000.0;
 const float NEAR_CLIP = 0.01;
 
 void main() {
-    int state = 0xfa7229ba ^ int(dot(tex_co, vec2(447993.0990638579, 103383.36022113753)));
-    state += int(frame * dot(tex_co, vec2(-123723.27260029671, 212688.06612332544)));
+    // int state = 0xfa7229ba ^ int(dot(tex_co, vec2(447993.0990638579, 103383.36022113753)));
+    // state += int(frame * dot(tex_co, vec2(-123723.27260029671, 212688.06612332544)));
+    uint seedA = uint(int(gl_FragCoord.x) * 1973 + int(gl_FragCoord.y) * 9277);
+    uint seedB = uint(int(frame) * 26699) | 1u;
+    uint state = seedA ^ seedB;
+
+    // Run rng once to mix the state
+    rng(state);
 
     // thin lens equation is 1/object-distance + 1/focus = 1/lensFocal
     // Coordiates: aperture is at 0, 0, 0 and is facing towards the -Z direction (img sensor is +Z)
@@ -433,8 +440,7 @@ const resetPhoto = () => {
     <div id="txt">
       <h1>Camera Simulator</h1>
       <p>
-        A ray-traced camera simulator in WebGL by Grant Yang. Does not work on Firefox for some reason, and I honestly
-        give up trying to debug it.
+        A ray-traced camera simulator in WebGL by Grant Yang.
         <br/>
         FPS: {{fps.toFixed(1)}}
       </p>

@@ -3,7 +3,7 @@ title: 'a monad is a monoid in the category of endofunctors'
 created: '2025-07-11'
 modified: '2025-07-16'
 subhead: "Exploring category theory with Haskell and Rust. What is a category? Functors, monads, initial and terminal objects, etc."
-tags: "mathposting"
+tags: "mathposting,featured"
 ---
 
 Crash course on category theory stuff I guess. 

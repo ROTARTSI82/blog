@@ -1,7 +1,7 @@
 ---
 title: 'trying to learn differential geometry'
 created: '2025 08 28'
-tags: 'mathposting'
+tags: 'mathposting,featured'
 ---
 
 Join me on my mission of trying to understand some of [John M. Lee's _Smooth Manifolds_ (Second Edition)](https://link.springer.com/book/10.1007/978-1-4419-9982-5).
