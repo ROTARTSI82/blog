@@ -97,49 +97,59 @@
 \begin{document}
 
 %----------HEADING-----------------
-\begin{tabular*}{\textwidth}{l @{\qquad} r @{\extracolsep{\fill}} r}
+\begin{tabular*}{\textwidth}{l @{\quad} r @{\extracolsep{\fill}} r}
   \textbf{{\Large Grant Yang}} &  & \href{tel:+4085684549}{(408) 568-4549} \\
-  \href{mailto:granty29@uw.edu}{granty29@uw.edu} & \href{https://github.com/ROTARTSI82}{github.com/ROTARTSI82} &  \href{https://students.washington.edu/granty29}{students.washington.edu/granty29}\\
+  \href{mailto:grantyang82@gmail.com}{grantyang82@gmail.com} & \href{https://github.com/ROTARTSI82}{github.com/ROTARTSI82} &  \href{https://students.washington.edu/granty29}{students.washington.edu/granty29}\\
 \end{tabular*}
 
 
 \section{Skills}
 \resumeSubHeadingListStart
-    \resumeItem{Technical}{Python, Numpy, PyTorch, C, C++, Rust, OpenGL, Java, TypeScript, ReactJS, TailwindCSS}
-    \resumeItem{Other}{Wolfram Mathematica, \LaTeX, Information Theory, LLMs and Transformer Architecture, Blender}
+    \resumeItem{Languages}{Python, C, C++, Rust, Java, TypeScript}
+    \resumeItem{Technology}{Numpy, PyTorch, OpenGL, ReactJS, Git, Linux/Unix, Networking}
+    \resumeItem{Misc}{Wolfram Mathematica, Information Theory, Linear Algebra, Functional Programming}
 \resumeSubHeadingListEnd
 
 %-----------EDUCATION-----------------
 \section{Education}
   \resumeSubHeadingListStart
     \resumeSubheading
-      {University of Washington}{Seattle, WA}
-      {In progress: Bachelor of Science in Electrical and Computer Engineering}{2025 -- 2029}
+      {University of Washington}{Seattle, WA}{Bachelor of Science in Electrical and Computer Engineering}{2025 -- 2029 (expected)}
+      \resumeItemListStart
+      \resumeItem{Coursework}{MATH 208: Linear Algebra, CSE 123: Computer Programming III} % STAT 390: Statistical Analysis in R, \\ E E 215: Intro to Electrical Engineering, PHYS 143: Honors Waves, Optics, \& Heat.
+      \resumeItemListEnd
     \resumeSubheading
       {Harker Upper School}{San Jose, CA}
       {4.6/4.8 GPA}{2021 -- 2025}
   \resumeSubHeadingListEnd
 
-%-----------EXPERIENCE-----------------
-\section{Leadership Experience}
+\section{Experience}
 \resumeSubHeadingListStart
-\resumeItem{LinkCrew (2023-2024)}{Organized and led discussions and games for groups of 10-20 students for my school, serving as an ambassador for new students.}
-\resumeItem{Yearbook Editor (2022-2024)}{Managed reporters and planned coverage and content. Designed pages in Adobe InDesign, interviewed sources and took photos at events. Wrote an award-winning profile of one of my classmates (Best of SNO).}
+\resumeItem{UW Math AI Lab - Algebraic Geometry (Winter 2026)}{Used Lean to formalize results on monogenic extensions of regular local rings (under Prof. Bianca Viray and Bryan Boehnke). \href{https://github.com/uw-math-ai/monogenic-extensions}{\underline{uw-math-ai/monogenic-exetensions}}}
 \resumeSubHeadingListEnd
 
 %-----------PROJECTS-----------------
 \section{Projects}
+Underlines are clickable links.
   \resumeSubHeadingListStart
-  \resumeSubItem{\href{https://github.com/ROTARTSI82/chess}{C++ Chess Engine}}{Wrote a UCI chess engine that uses alpha-beta search to play chess. Implemented tricks including bitboards and multithreading.}
-      \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm}{Custom LLM}}
-      {From reading the literature on the subject, I implemented a transformer from scratch in PyTorch and trained a toy model on my text messages.}
-    \resumeSubItem{Robot Control}{Used a PID controller to drive a robot with Mecanum wheels, and implemented inverse kinematics to plan motions for a robot arm with 5 degrees of freedom.}
-    \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATCompilers}{Pascal Compiler}}
-      {Created a compiler for a custom Pascal dialect that targets MIPS32 assembly.}
-    \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS}{Neural Network}}
-      {Wrote and trained a network from scratch in Rust to perform image recognition.}
-    \resumeSubItem{4-bit Breadboard Computer}{Explored computer architecture by building a functional 4-bit computer from 7400-series integrated circuit chips. Programmed the computer with a custom instruction set to output the Fibonacci numbers.}
+  \resumeSubItem{\href{https://github.com/ROTARTSI82/chess}{\underline{C++ Chess Engine}}}{Designed a UCI chess engine based on alpha-beta search that achieved a 1600 Lichess rating. Utilized optimizations including ``magic bitboards," multithreading, and caching to search over 2M positions per second.}
+      \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm}{\underline{Custom LLM}}}
+      {Implemented a transformer from scratch in PyTorch. Trained a 40M parameter model on my text messages, and performed a scaled-up training run on UW's Hyak supercomputer of a 150M parameter model.}
+    \resumeSubItem{4-bit Breadboard Computer}{Built a functional 4-bit computer from 7400-series integrated circuit chips. Programmed the computer with a custom Instruction Set Architecture (ISA) to output the Fibonacci numbers.}
+    \resumeSubItem{Robot Control}{Used PID to drive a robot with Mecanum wheels, and implemented Jacobian inverse kinematics to plan motions for a robot arm with 5 degrees of freedom.}
+    \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS/tree/ATCompilers}{\underline{Pascal Compiler}}}
+      {Designed and implemented a compiler for a custom Pascal dialect that targets MIPS32 assembly. Demonstrated complex programs on a MIPS32 emulator.}
+    % \resumeSubItem{\href{https://github.com/ROTARTSI82/ATCS}{Neural Network}}
+    %   {Wrote and trained a network from scratch in Rust to perform image recognition. Explored papers like ADAM, cross-entropy/Kullback-Leibler loss.}
   \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+% \section{Leadership Experience}
+% \resumeSubHeadingListStart
+% \resumeItem{Yearbook Editor (2022-2024)}{Managed reporters and planned coverage and content. Designed pages in Adobe InDesign, interviewed sources and took photos at events. Wrote an award-winning profile of one of my classmates (Best of SNO).}
+% \resumeItem{LinkCrew (2023-2024)}{Organized and led discussions and games for groups of 10-20 students for my school, serving as an ambassador for new students.}
+% \resumeSubHeadingListEnd
+
 
   % \resumeSubHeadingListStart
 
@@ -152,7 +162,7 @@
   %       \resumeItem{Apache Beam}
   %         {Apache Beam is a unified model for defining both batch and streaming data-parallel processing pipelines, as well as a set of language-specific SDKs for constructing pipelines and runners.}
   %     \resumeItemListEnd
-
+      
 % --------Multiple Positions Heading------------
   %  \resumeSubSubheading
   %   {Software Engineer I}{Oct 2014 -- Sep 2016}
