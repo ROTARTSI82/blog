@@ -22,3 +22,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# random things
+local/personal-website-*.json
+deploykey*
+local/vergilcpy/
