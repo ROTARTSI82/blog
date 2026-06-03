@@ -4,6 +4,7 @@ import remarkMath from 'remark-math';
 // import rehypeKatex from 'rehype-katex';
 import rehypeMathjax from 'rehype-mathjax/chtml';
 import remarkToc from "remark-toc";
+import { unified } from '@astrojs/markdown-remark';
 import { remarkCustomPlugin, rehypeCustomPlugin } from './src/custom-remark-rehype';
 
 import tailwindcss from '@tailwindcss/vite';
@@ -18,21 +19,23 @@ export default defineConfig({
   outDir: 'public_html/',
   trailingSlash: 'always',
   markdown: {
-    remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
-    rehypePlugins: [
-      rehypeCustomPlugin,
-      [rehypeMathjax, {
-        chtml: {
-          scale: 1.2,
-          fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
-        },
-        tex: {
-          macros: {
-            R: '\\mathbf{R}'
+    processor: unified({
+      remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
+      rehypePlugins: [
+        rehypeCustomPlugin,
+        [rehypeMathjax, {
+          chtml: {
+            scale: 1.2,
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+          },
+          tex: {
+            macros: {
+              R: '\\mathbf{R}'
+            }
           }
-        }
-      }]
-    ],
+        }]
+      ],
+    })
   },
 
   vite: {
