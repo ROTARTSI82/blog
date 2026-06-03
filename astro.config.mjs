@@ -5,7 +5,8 @@ import remarkMath from 'remark-math';
 import rehypeMathjax from 'rehype-mathjax/chtml';
 import remarkToc from "remark-toc";
 import { unified } from '@astrojs/markdown-remark';
-import { remarkCustomPlugin, rehypeCustomPlugin } from './src/custom-remark-rehype';
+import { remarkCustomPlugin, rehypeCustomPlugin,
+         rehypeMathjaxWrapper, rehypeMathjaxProcessor } from './src/custom-remark-rehype';
 
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
@@ -22,6 +23,7 @@ export default defineConfig({
     processor: unified({
       remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
       rehypePlugins: [
+        rehypeMathjaxWrapper,
         rehypeCustomPlugin,
         [rehypeMathjax, {
           chtml: {
@@ -33,7 +35,8 @@ export default defineConfig({
               R: '\\mathbf{R}'
             }
           }
-        }]
+        }],
+        rehypeMathjaxProcessor
       ],
     })
   },

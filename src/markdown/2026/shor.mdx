@@ -1,0 +1,240 @@
+---
+title: 'stealing your money with a quantum computer - by rohan ramkumar'
+created: '2032-10-31'
+subhead: "Exploring Shor's Algorithm"
+tags: "mathposting,guest(rohan),hide-ls"
+author: "Rohan Ramkumar"
+---
+<p style="text-align: center">_Post by Rohan Ramkumar (rohansr@stanford.edu)_</p>
+
+This blog post is intended for people with a linear algebra background (vectors, matrices, gaussian elimination, projection, linear transformations, *etc.*). Some number theory knowledge would be nice, but it definitely isn't required to understand the main concepts.
+
+
+You've probably seen news articles like [this](https://www.livescience.com/technology/computing/quantum-computers-will-be-a-dream-come-true-for-hackers-risking-everything-from-military-secrets-to-bank-information-can-we-stop-them) and [this](https://news.bitcoin.com/bitcoins-quantum-risk-former-pharma-exec-martin-shkreli-says-shors-algorithm-is-the-one-to-watch/) telling you that Quantum Computers are going to break into your bank account, take your bitcoin, steal your wife, crack military secrets, or all sorts of terrible things, and it's easy to either brush it off as a load of sensationalism, or instead start panicking in fear that they will destroy everything we hold sacred. But I think it's important to understand what Quantum Computers are actually doing, and why they might or might not be significant in the possibly near future.
+# Who cares?
+As of writing this, there are pretty much three extremely promising quantum algorithms that are not only faster than classical computers, but also relevant in modern day applications:
+1. Grover's Algorithm: This is a very interesting and (at least for me) somewhat unintuitive algorithm that can basically guess an unknown number $n$ between $1$ and $N,$ given by some blackbox function, in $O(\sqrt{N})$ time on average, while any classical computer can only do $O(N)$ at best by just checking each number from $1$ to $N.$ If you want to learn more about this, I really recommend watching 3Blue1Brown's fantastic set of videos on it [here,](https://www.youtube.com/watch?v=RQWpF2Gb-gU) but that won't be the focus of this post.
+
+2. The HHL Algorithm: Discovered by Aram Harrow, Avinatan Hassidim, and Seth Lloyd, this algorithm can effectively solve the equation $Ax=b$ for any matrix $A$ and vector $b,$ with the major caveat that it is difficult to extract the vector $x$ directly, although other information about it can be gleaned. While I do not admire one of the author's relationship to a [certain disgraced financier,](https://www.masslive.com/boston/2020/12/massachusetts-institute-of-technology-disciplining-professor-with-ties-to-disgraced-financier-jeffrey-epstein.html) I do think that this could be a very important algorithm, as it can solve this problem in $O(\log(N))$ time for an $N\times N$ matrix, while a classical computer takes $O(N)$ (I am oversimplifying this, but the important part is that it's a lot faster). The algorithm is pretty complicated, but there are a lot of resources online to learn more about it, such as [this](https://arxiv.org/pdf/2108.09004). However, this post will concern the third, and probably most often discussed, algorithm.
+
+3. Shor's Algorithm: This algorithm can factor numbers really really fast. That's it.
+
+That doesn't sound that interesting or hard right? While it's easy to imagine how powerful Grover's algorithm is and how great it would be if the pain of Gaussian elimination could be, well ... eliminated, factoring integers doesn't seem that difficult or important at first. But, it turns out that a major encryption method, namely the RSA algorithm, relies on the fact that for large numbers (on the order of 2000 bits), it is extremely difficult to figure out their prime factors given the algorithms currently available.
+# But What is RSA?
+Let's say that Bob wants to send the number $m$ to Alice. Alice wants to give Bob enough information to encrypt $m$ but not too much information that an eavesdropper could reverse-engineer what Bob did and decrypt it. The way she will do so is by choosing two large prime numbers $p$ and $q$ and multiplying them together such that $N=pq,$ and note that $N$ is pretty large, on the order of $2^{2048}.$ We then calculate the Euler totient function  $\varphi(N),$ which we can compute as $(p-1)(q-1)$ in this case.[^1] 
+
+But what is the totient function? The function is defined as the number of integers between $1$ and $N$ that are coprime to $N;$ that is $\varphi(N)=|\{a\in\{1,\ldots,N\}:\mathrm{gcd}(n,N)=1\}|.$ For instance, $\varphi(1)=1,$ and $\varphi(p^k)=p^k-p^{k-1}$ for prime $p$ (try to see why this is true). An important property of $\varphi$ is that it is multiplicative, so $\varphi(m)\varphi(n)=\varphi(mn)$ for relatively prime $m,n.$ This follows from the Chinese remainder theorem, which says that given $\mathrm{gcd}(m,n)=1$ and $a<m,b<n,$ there exists exactly one $c<mn$ such that $c\equiv a\pmod{m}$ and $c\equiv b\pmod{n}.$ It's easy to conclude that if $\mathrm{gcd}(a,m)=\mathrm{gcd}(b,n)=1$ then $\mathrm{gcd}(c,mn)=1$ by recognizing that $c\bmod{m}$ and $c\bmod{n}$ ought to still be coprime to $m$ and $n$ respectively, so CRT forms a bijection between the sets $\{a\in\{1,\dots,m\}:\mathrm{gcd}(a,m)=1\}\times\{b\in\{1,\dots,n\}:\mathrm{gcd}(b,n)=1\}$ and $\{c\in\{1,\dots,mn\}:\mathrm{gcd}(c,mn)=1\},$ from which it follows that $\varphi(mn)=\varphi(m)\varphi(n).$ 
+
+The multiplicative property allows us to calculate $\varphi(N)$ efficiently if we know the prime factorization of $N.$ I want to emphasize this because it is very important in how RSA works: $\varphi(N)$ can easily be calculated if we can factor $N,$ but it is very difficult to do so if we do not know the factorization.
+
+This still doesn't explain why we care about the totient function; and the reason why comes from a fundamental result in number theory that states that for $a,n$ coprime,
+$$
+a^{\varphi(n)}\equiv 1\pmod{n}.
+$$
+(The best proof of this that I can find relies on some group theory, so feel free to skip over this if you wish.) Consider the group $(\mathbb{Z}/n\mathbb{Z})^\times$ corresponding to the set of integers between $1$ and $n$ that are coprime to $n,$ under the operation of multiplication modulo $n,$ and note that this is in fact a group because the product of two such elements is still coprime, and so must its inverse (this follows from Bezout's lemma), and furthermore, we see that the order of this group is $\varphi(n),$ by definition. Consider the subgroup generated by some element $a,$ consisting of $\{1,a,a^2,\dots,a^{r-1}\},$ so that $a^r\equiv 1\pmod{n},$ and this subgroup has order $r$ by inspection. We see that such an $r$ must exist, as there are only finitely many options for the powers of $a$ in our group and so the powers must repeat after at most $\varphi(n)+1$ powers by pigeonhole, and if $a^x\equiv a^y\pmod{n}$ for $x<y,$ then we have that $a^{y-x}\equiv 1\pmod{n}.$ Thus, by Lagrange's theorem, we see that $r\mid\varphi(n),$ so $\varphi(n)=rk$ for some integer $k.$ This means that $a^{\varphi(n)}=a^{rk}=\left(a^r\right)^k\equiv 1\pmod{n},$ as desired.
+
+
+So, if she knows $\varphi(N)=(p-1)(q-1)$ for our large $N=pq,$ Alice can calculate $d\equiv e^{-1}\pmod{\varphi(n)}$ through the Extended Euclidean algorithm, and she keeps this number secret, while publishing $e$ and $n$ to the world. So, Bob, with his message $m$ can just send her the number $m^e\pmod{n}.$ Upon receiving this, Alice only needs to raise this to the power of $d,$ which only she knows, and she will get
+$$
+\left(m^d\right)^e=m^{de}=m^{k\varphi(N)+1}\equiv m\pmod{N},
+$$
+as $de\equiv 1\pmod{\varphi(N)}.$ If someone over heard Bob send $m^e$ to alice, they would have trouble figuring out $d$ given only $e$ and $N,$ unless they could factor $N$ and find $\varphi(N),$ which is a very difficult task for classical computers, keeping this exchange secure.
+
+
+It turns out that factoring an integer is a classic example of an NP problem, as it's easy to verify a factorization once one is found, but, as far as we know, it's extremely difficult to find such a factorization for a large number with our arsenal of classical algorithms. If you're able to show that any problem like this with an easily verifiable solution can be solved quickly on a classical computer, you'd be on your way to win [a million dollars,](https://www.claymath.org/millennium/p-vs-np/) but more importantly, completely shake up the field of computer science as we know it. As I am not a millionaire, let's focus first on what some of the best classical factorization methods look like, before looking at how Shor's Algorithm can improve on that.
+
+(TLDR: RSA relies on the fact that factoring numbers is hard on classical computers for someone trying to crack the encryption)
+
+# The State of the Art for Classical Computers
+(I wrote this part mostly because I think the algorithm is pretty cool, and I think it helps contextualize Shor's algorithm a little better when we get to it. Feel free to skip this section if you want.)
+
+Before we talk about quantum computers, I wanted to discuss the second-best known classical algorithm for factoring numbers. Why the second-best? Well, the asymptotically best known algorithm is the [general number field sieve,](https://en.wikipedia.org/wiki/General_number_field_sieve) which is above my pay grade, and the next best algorithm, known as the Quadratic Sieve, is a lot more intuitive and actually better for numbers on or less than the order of a googol, which is still a pretty damn big number.
+
+Given composite $N,$ it suffices to find a nontrivial factor $K$ of $N$ (*i.e.,* $K\ne 1$ or $N$), because we can apply this algorithm recursively to both $K$ and $N/K$ after checking if either is prime using [your favorite primality testing algorithm](https://en.wikipedia.org/wiki/Primality_test) to arrive at a complete prime factorization of $N.$ Specifically, we want to find numbers $a$ and $b$ such that $a^2$ and $b^2$ have the same remainder when divided by $N;$ formally, we would write this as $a^2\equiv b^2\pmod{N}.$ The reason why this is helpful is that this equivalence would imply that $(a+b)(a-b)$ divides some multiple of $N,$ meaning that there is a good chance that either $a+b$ or $a-b$ shares a nontrivial factor with $N,$ which we can find with the Euclidean algorithm.
+
+The way we will find $b$ is by multiplying together a specific set of $b_i=a_i^2-N,$ with each $a_i>\sqrt{N},$ in a way that $\prod_i b_i$ is a perfect square; *i.e.,* all exponents in its prime factorization are even. Unfortunately, there are approximately $\pi(10^{100})=4.3\times 10^{97}$ primes under $10^{100}$ by the prime number theorem, and that is way too many to check with even the best computers, so we will bound the number of unique primes in the factorization using a concept called **smoothness.** 
+
+Given a positive number $B,$ we call a number $B$-smooth if each prime in its prime factorization is less than or equal to $B.$ For instance, $5^{1000}\cdot 7^{2300}$ would be 8-smooth, while 11 would not. Notice how smoothness does not constrain the size of a number, only the number of primes in its factorization. It's easy to see how the larger $B$ is, the sparser the $B$-smooth numbers in the integers. Specifically, for large $N,$ the number of $B$-smooth numbers less than $N$ is approximately 
+$N\rho\left(\frac{\log N}{\log B}\right),$
+where $\rho(u)$ is known as the Dickman function, a function that decreases about as fast as $u^{-u}$ (or in other words, fast). So, we have a tradeoff in choosing $B:$ a smaller $B$ requires less computation but we are more unlikely to find a $B$-smooth number, while a larger $B$ requires much more computation, even though we can more easily find a $B$-smooth number. [Apparently,](https://math.dartmouth.edu/~carlp/PDF/qs08.pdf) the optimal value of $B$ is around $e^{\sqrt{\ln(N)\ln(\ln(N))}},$ but that isn't too important for understanding the algorithm.
+
+The crux of the algorithm is the following observation: for each $B$-smooth number, we can assign it a vector of length $\pi(B)$ over the finite field $\mathbb{Z}/2\mathbb{Z},$ which is the set $\{0,1\}$ where addition is XOR (addition modulo 2) and multiplication is standard. We let the $i$th component of the vector be the parity of the exponent of the $i$th prime in its factorization, for each $i\le\pi(B).$ For example, if $B=8,$ then the number $10800=2^4\cdot 3^3\cdot 5^2=2^4\cdot 3^3\cdot 5^2\cdot 7^0$ would correspond to the vector $\begin{bmatrix}0&1&0&0\end{bmatrix},$ as 4 is even, 3 is odd, and 0 is even. We see that the vector corresponding to the product of two numbers is precisely the sum of the vectors corresponding to those numbers, as, for instance $(2^4\cdot 3^3\cdot 5^2)(2^7\cdot 5^4\cdot 7^1)=2^{4+7}\cdot 3^{3+0}\cdot 5^{2+4}\cdot 7^{0+1},$ which corresponds to the vector $\begin{bmatrix}1&1&0&1\end{bmatrix}=\begin{bmatrix}0&1&0&0\end{bmatrix}+\begin{bmatrix}1&0&0&1\end{bmatrix}.$ Also note that the condition of a number being a perfect square is exactly equaivalent to its corresponding vector being the zero vector, so the product of a set of numbers being a perfect square is the same as saying that their corresponding vectors sum to zero. But if you recall from linear algebra, if we have a set of $\pi(B)+1$ vectors of dimension $\pi(B),$ they must form a linearly dependent dependent, yielding a linear combination that produces the zero vector, which is exactly what we want! The specific combination can be calculated using Gaussian elimination (you can never escape it) to find the null space of the matrix whose columns are the $\pi(B)+1$ vectors we chose, and multiplying their correesponding numbers yields a perfect square. We can see more clearly that the Gaussian elimination step is the reason why we want to bound the number of primes by $B,$ because it takes $O(\pi(B)^3).$
+
+
+Now for the actual algorithm.
+1. Starting with $x=\lfloor\sqrt{n}\rfloor+1,$ calculate $x^2-N,$ and if that number is $B$-smooth, call $a_1=x$ and $b_1=x^2-N.$ Keep incrementing $x$ and checking for smoothness until we have $a_i$ and $b_i$ for all $1\le i\le \pi(B)+1.$ 
+2. Now, using Gaussian elimination, find a subset of the $\{b_i\}$ whose product is a perfect square, and call this $b^2.$ Call $a$ product of the corresponding subset of $\{a_i\},$ and we have that $a^2\equiv b^2\pmod{N},$ since each $a_i^2\equiv b_i\pmod{N}.$
+3. Using the Euclidean algorithm, check if $a+b$ or $a-b$ share a nontrivial factor with $N.$ If so, then success! If not, try again with a different linear combination.
+
+This is a highly simplified version of the algorithm; for instance, there is a lot of nuance in checking if a number is $B$-smooth, as just checking all the divisors isn't very fast. The chance of step 3 succeding is [around 50%,](https://math.stackexchange.com/a/1549324) so we can expect to find a factor in only a few iterations. The time complexity of the entire algorithm is [conjectured](https://math.dartmouth.edu/~carlp/PDF/qs08.pdf) to be about $e^{2\sqrt{\ln(N)\ln(\ln N))}},$ which is sub-exponential (*i.e.,* better than exponential but not as good as polynomial). This isn't bad, but it's not very good either, especially as $N$ gets really large, and this is where Quantum Computers come in.
+
+# A Crash Course on Quantum Computing
+To talk about quantum computing, we must first discuss the most basic form of quantum information: a qubit. Formally speaking, a qubit is nothing more than a unit vector of dimension 2 over $\mathbb{C}$ spanned by the orthonormal (really unitary) basis $\ket{0}$ and $\ket{1}.$ In other words, a qubit is of the form $\alpha\ket{0}+\beta\ket{1},$ where $\alpha,\beta\in\mathbb{C}$ satisfy $|\alpha|^2+|\beta|^2=1.$ We call such a state a **superposition** of the basis states (this notation for vectors is known as bra-ket notation). We denote the inner product of two vectors $\ket{\psi_1}$ and $\ket{\psi_2}$ by $\braket{\psi_1|\psi_2},$ and we call $\bra{\psi_1}$ a bra and $\ket{\psi_2}$ a ket (think of a bra as a row vector and a ket as a column vector; more specifically they are conjugate transposes of eachother). You can try to develop some sort of intuition for a superposition if that helps, but I personally find it easiest to think of a qubit as nothing more than a complex-valued vector, as quantum mechanics is not very intuitive. 
+
+The Born rule tells us that we can **measure** this qubit (with respect to a basis), and we will obtain $\ket{0}$ with a probability of $|\alpha|^2$ and $\ket{1}$ with a probability of $|\beta|^2$ (hopefully this explains why our qubit needs to be a unit vector). Think of this as a projection onto either $\ket{0}$ or $\ket{1},$ where the probability is the norm of the projection, and the new qubit, the collapsed version, is just a normalization of the projection.
+
+What about multiple qubits? We denote the tensor product of two qubits $\alpha\ket{0}+\beta\ket{1}$ and $\gamma\ket{0}+\delta\ket{1}$ to be
+$$
+(\alpha\ket{0}+\beta\ket{1})\otimes(\gamma\ket{0}+\delta\ket{1})=\alpha\gamma(\ket{0}\otimes\ket{1})+\alpha\delta(\ket{0}\otimes\ket{1})+\beta\gamma(\ket{1}\otimes\ket{0})+\beta\delta(\ket{1}\otimes\ket{1}).
+$$
+(Technically, it would be morally better to refer to this as the rather than the tensor product, but go ask Grant about that if you're curious. Since everyone calls it a tensor product, I will as well.) For the sake of notation, we will denote $\ket{\psi_1}\otimes\ket{\psi_2}=\ket{\psi_1\psi_2},$ and later on, we'll simplify further by denoting $\ket{n}=\ket{b_k}\otimes\ket{b_{k-1}}\otimes\dots\ket{b_1},$ where $b_kb_{k-1}\dots b_1$ is the binary expansion of $n$ (with leading zeros to make the length $k$). So, in a 4-qubit system, we would have $\ket{5}=\ket{0101}=\ket{0}\otimes\ket{1}\otimes\ket{0}\otimes\ket{1}.$ It's not too hard to verify that the tensor product of $k$ qubits is a unit vector of dimension $2^k$ over $\mathbb{C},$ so this is a reasonable definition. However, some interesting things happen when we try to extend Born's rule. Suppose we have the 2-qubit system given by
+$$
+\Phi=\frac{1}{\sqrt{2}}(\ket{00}+\ket{11}),
+$$
+known as a Bell state. If we measure the first qubit, which is in an equal superposition between $\ket{0}$ and $\ket{1},$ we can expect to measure $\ket{0}$ exactly $\left(\frac{1}{\sqrt{2}}\right)^2= 50\%$ of the time. So far, so good. Say that we measure $\ket{0}.$ Then what will happen if we measure the second qubit? You may think that it could be either $\ket{0}$ or $\ket{1},$ but think about what happens if we project $\Phi$ onto the space spanned by $\ket{0}$ in the first qubit. The vector $\ket{11}$ is perpendicular to this space, so by linearity, the projection is $\frac{1}{\sqrt{2}}\ket{00},$ which means that the collapsed state is just $\ket{00}$ after normalization. So, the second qubit will be measured as $\ket{0}$ with probability 1. In this case, we would call the first and second qubits **entangled.** 
+
+Ok, what can we do with qubits? It turns out, very little, at least in some sense. All that we can do is apply what are known as unitary matrices, matrices $U$ for which $U^\dagger U=U U^\dagger=I,$ where $U^\dagger$ is the conjugate transpose of $U,$ known as the hermitian adjoint. The reason why this is a necessary condition is that
+$$
+\Vert \ket{U\psi}\Vert^2=(\ket{U\psi})^\dagger\ket{U\psi}=\braket{\psi|U^\dagger U|\psi}=(\ket{\psi})^\dagger\ket{\psi}=\Vert\ket{\psi}\Vert^2=1,
+$$
+
+or, in other words, $U\psi$ is a unit vector and thus a valid qubit. If this manipulation seems like black magic, go read [Agastya's blog post](/granty29/blog/2025/spectral-1031/) to learn more about the transpose (and by extension the hermitian conjugate). As for why $U$ has to be linear, that's just how our reality seems to work. Sorry, can't really help there. If you're familiar with orthonormal matrices, then you can just think of unitary matrices as an extension of that concept to complex numbers. Basically, they're just generalized rotations/reflections.
+
+But what do these gates look like concretely? We can think of these gates as either acting on a single qubit or acting on multiple qubits. Let's talk about single-qubit gates first. The simplest nontrivial gate is the Hadamard gate, which has a matrix
+$$
+H=\frac{1}{\sqrt{2}}\begin{bmatrix}
+1&1\\1&-1
+\end{bmatrix}.
+$$
+Applying this on $\ket{0},$ we get $\frac{1}{\sqrt{2}}(\ket{0}+\ket{1}),$ so a Hadamard gate converts $\ket{0}$ into an equal superposition of $\ket{0}$ and $\ket{1}.$ This is probably the most important quantum gate because applying it on each qubit of the $k$-qubit system $\ket{00\ldots0}$ yields an equal superposition of $\ket{0},\ket{1},\ldots,\ket{2^{k}-1},$ which lets us do some fun interference stuff, which we'll get to in a bit.
+To understand what these one-qubit gates look like in general, we need the Bloch Sphere. Basically, each qubit can be represented as a point on a sphere, in a way such that $\ket{0}$ and $\ket{1}$ are on opposite poles. ADD A PICTURE HERE YOU DUMBASS. Considering this picture, it's natural to consider the transformation of rotating a qubit by $\theta$ radians along the $x,y$ or $z$ axis. For [reasons,](https://www.youtube.com/watch?v=Ay482u6b3Xo) we actually want to think about a rotation of $\frac{\theta}{2}$ radians, and we call such a transformation $R_x(\theta),R_y(\theta)$ or $R_z(\theta),$ corresponding to the respective axis. 
+
+Two-qubit gates are more interesting because we can start entangling our qubits, to create things like our Bell state $\Phi$ as mentioned earlier. The most important two-qubit gate is the CNOT gate, or Controlled-NOT, otherwise called a CX gate. We can consider a one-qubit NOT gate, called an X gate, which is just the linear transformation corresponding to the matrix
+$$
+X=\begin{bmatrix}0&1\\1&0\end{bmatrix},
+$$
+which just swaps the $\ket{0}$ and $\ket{1}$ vectors. This turns out to be the same as $R_X(\pi)$ (up to a global phase shift which usually isn't important), hence the name. A CX gate is given by the matrix
+$$
+CX=\begin{bmatrix}1&0&0&0\\0&1&0&0\\0&0&0&1\\0&0&1&0\end{bmatrix},
+$$
+and this basically ``controls'' the operation on the second qubit based on the state of the first, leaving the first unchanged. If the first qubit is not in superposition, it acts straightforwardly:
+$$
+CX(\ket{0\psi})=\ket{0\psi},\qquad CX(\ket{1\psi})=\ket{1}\otimes X(\ket{\psi}).
+$$
+In other words, if the first qubit is $\ket{0},$ then it does nothing, but if the first qubit is $\ket{1},$ then it applies an $X$ gate to the second qubit. (Don't trust me on this. Verify it with the matrix.) It follows that if the first qubit is $\ket{\psi_1}=\alpha\ket{0}+\beta\ket{1}$ (with $|\alpha|^2+|\beta|^2=1$ of course), and the second qubit is $\ket{\psi_2},$ then
+$$
+CX(\ket{\psi_1\psi_2})=\alpha\ket{0\psi}+\beta(\ket{1}\otimes X(\ket{\psi})).
+$$
+The superposition $\psi_1$ of qubit 1 is unchanged, yet qubit 2 has now become entangled with $\psi_1.$ For example, if $\psi_1$ is the equal superposition $\frac{1}{\sqrt{2}}(\ket{0}+\ket{1}),$ then
+$$
+CX\ket{\psi_10}=\frac{1}{\sqrt{2}}(\ket{00}+\ket{11})=\Phi,
+$$
+our Bell state from before!
+
+It turns out that we only need the gates $R_X(\theta),R_Y(\theta),R_Z(\theta),P(\varphi),$ and $CX$ to approximate any arbitrary $k$-qubit unitary ``well,'' specifically that it takes around $O(m\log(m/\varepsilon)^c)$ gates to approximate an $m$-qubit unitary within error $\varepsilon$ for a consant $c,$ and this result is known as the Solovay–Kitaev theorem, which provides an algorithm for doing exactly so.
+
+
+Quantum computers can apply these unitaries extremely fast due to physical nature of qubits. For instance, a certain implementation of a gate might be the result of sending a laser through a mirror or a beam splitter, which happens at the speed of light. Now, that's just for optical quantum computing, which has a lot of downsides, and other implementations aren't quite as fast, such as trapped ions and superconducting qubits (which is the way that those [golden chandeliers](https://www.popsci.com/technology/in-photos-journey-to-the-center-of-a-quantum-computer/) implement it). So, applying these unitaries may not be light-speed, but still way faster than a classical computer could, and in this lies the power of quantum computing.
+
+# Shor's Algorithm
+Time to break some numbers open. Similar to as in the quadratic sieve, we only need to find a nontrivial factor our composite number $N,$ and we can also assume that it's not a prime power, which can be easily checked by taking roots and checking for primality.
+
+First, we will choose an arbitrary integer $2\le a<N.$ We can check with the Euclidean algorithm if $a$ shares a nontrivial factor with $N.$ If it does, then congrats, we're done! No quantum computers needed! Ok, that's probably not going to happen if $N$ is really big, so what now? We have a number $a$ that is coprime to $N,$ so as we argued earlier, there exists some exponent $r$ such that $a^r-1$ is a multiple of $N,$ so $a^r-1\equiv 0\pmod{N}.$ Let's assume that we can somehow find $r$ (we will see soon that it's not that easy), and suppose that $r$ happens to be even. If it's odd, then tough luck; throw it away and try a new $a.$ By difference of squares, we have that $(a^{r/2}-1)(a^{r/2}+1)\equiv 0\pmod{N},$ and just like in the quadratic sieve, there's a good chance that $a^{r/2}-1$ shares a nontrivial factor with $N,$ which we can find with the Euclidean algorithm, although we will have to try again with a different $a$ if it doesn't.
+
+That sounds pretty simple, so why do we need a quantum computer? It turns out that finding $r$ is very difficult, and this is known as the Discrete logarithm problem, which is very difficult with a classical computer, and the heart of Shor's algorithm lies in computing $r$ efficiently. Even the most efficient classical algorithms such as Pollard's Kangaroo algorithm and the Index Calculus method just won't cut it for large $N$ which is where Shor's algorithm comes in.
+
+The general procedure for many quantum algorithms is to first encode a function as a unitary operation and then apply that function to the state $\frac{1}{\sqrt{n}}(\ket{1}+\ket{2}+\dots+\ket{n}),$ and find a way to use interference to extract the desired state with a high probability. Some "toy algorithms" such as the Deutsch-Josza and Bernstein–Vazirani algorithms follow this idea closely, but Shor's algorithm is more intricate. Given $N$ and $a,$ we will construct a $3n$-qubit system, for $n=\lceil\log_2 N\rceil,$ and we will call the first $2n$ qubits the "first register" and the other $n$ qubits the "second register." We can make the first register bigger to improve the accuracy of the algorithm, but $2n$ works fine. The overview of the algorithm is that we will prepare the first register into an equal superposition, and then we will apply a modular exponentiation unitary on the second register, entangled with the first register. Then, when we measure the second register, the first register will have collapsed into the form $\ket{x}+\ket{x+r}+\ket{x+2r}+\dots+\ket{nr},$ after which we can apply the Quantum Fourier Transform to extract $r.$ Now let's dive into the details.
+
+To start the algorithm, we can apply a Hadamard to each of the qubits in the first register, yielding the state
+$$
+\frac{1}{2^n}\sum_{i=0}^{2^{2n}-1}\ket{i}\ket{0}^{\otimes n}
+$$
+
+We now want to engtangle the second register with the first register by applying a modular exponentiation unitary controlled by the first register. Specifically, we want this  transformation $U$ to transform vectors of the form $\ket{k}\ket{0}^{\otimes n}=\ket{k}\ket{0}$ into the state $\ket{k}\ket{a^k\bmod{N}}.$ But, we have to define it in a way such that it is unitary if we want to apply it to our system. It turns out that we can alternatively characterize unitary matrices as matrices that transform an orthonormal basis into another set of orthonormal vectors, as $(\braket{i|U^\dagger)( U|j})=\braket{i|j}=\delta_{ij},$ where $\delta$ is the Kronecker delta, and $\ket{i},\ket{j}$ are elements of an orthonormal basis of our vector space of qubits. The transformation we have so far satisfies this condition, but we have to extend our transformation to act on the rest of our vector space while still preserving unitarity-ness. Specifically, we will define
+$$
+U(\ket{k}\ket{x})=\begin{cases} \ket{k}\ket{x+a^k\bmod{N}}&x<N\\\ket{k}\ket{x}&x\ge N
+\end{cases}
+$$
+This has our desired effect when $x=0,$ and we see that $U(\ket{k_1}{x})$ is orthogonal to $U(\ket{k_2}{y})$ if $k_1\ne k_2,$ regardless of what $x$ and $y$ are. So, it suffices to prove that $U(\ket{k}\ket{x_2})$ is orthogonal to $U(\ket{k}\ket{x_2})$ for $x_1\ne x_2;$ more specifically that $x_1+a^k\not\equiv x_2+a^k\pmod{N}.$ But, as $x_1$ and $x_2$ are distinct numbers less than $N,$ they cannot have the same residue modulo $N,$ so this is easily true.
+
+We can now apply the Solovay-Kitaev theorem to create an approximation of $U$ from our universal gate set. I know that this isn't too satisfying, but basically one way implementing it is by successive squaring. The way this works is that we write the exponent in binary and keep track of $a,a^2,a^4,a^8,\dots.$ For example, if we wanted to find $5^{13}\bmod{7},$ we can write $13=1101_2,$ meaning that $5^{13}=5^{(1\cdot 1)}\cdot 5^{(0\cdot 2)}\cdot 5^{(1\cdot 4)}\cdot 5^{(1\cdot 8)},$ and note that $5^2\equiv 4\pmod 7, 5^4=4^2\equiv 2\pmod 7,5^8=2^2=4\pmod 7.$ Then, $5^{13}=5\cdot 5^4\cdot 5^8\equiv 5\cdot2\cdot4=5\pmod{7}.$ In our quantum circuit, we can take advantage of gates controlled by the first register to exploit the binary representation of $k$ when calculating $a^k.$
+
+Now, we have a state of the form
+$$
+\frac{1}{2^n}\sum_{i=0}^{2^{2n}-1}\ket{i}\ket{a^i\bmod N},
+$$
+and we are going to measure the second register, and let's say we measure some value $b.$ It doesn't actually matter what $b$ is, but what matters is the fact that we know now that the state must be in the form
+$$
+\sum_{i\in\{k<2^{2n}:a^k\equiv b\pmod N\}}\ket{i}\ket{b},
+$$
+times some normalization constant,
+because measurement is just a projection onto the subspace in which the second register is $\ket{b}.$ But, note that these $i$ must be of the form $i_0,i_0+r,i_0+2r,\dots,$ where $r$ is the order of $a\bmod N,$ as $r$ is the smallest positive number such that $a^r\equiv 1\pmod N\implies a^{i_0+r}\equiv a^{i_0}\equiv b\pmod N.$ But how do we extract $r$ from this?
+
+# The Quantum Fourier Transform
+(I will use $j$ to denote the imaginary unit. Deal with it.)
+Here's where things start to go a little off the rails, so I apologize in advance. Let's say I have a vector of complex numbers $x=(x_0,x_1,\dots,x_{K-1}),$ and we want to somehow measure how repetitive this sequence is, as well as what the frequency of this repetition is. This is pretty vague, so let's make it more precise by working in the vector space $\mathbb{C}^K,$ and asking how close our vector $x$ is to the vector $v_k:=\frac{1}{\sqrt{K}}(1,e^{2\pi jk/K},e^{2(2\pi jk/K)},\dots,e^{(K-1)(2\pi jk/K)}).$ Here, we are actually sampling our ``frequency space'' by considering $\omega=\frac{2\pi k}{K},$ for $k\in\{0,1,\dots,K-1\}.$ As $K$ grows, we won't lose too much information compared to using some arbitrary $\omega\in[0,2\pi).$ Complex exponentials are in some sense the most fundamental periodic function, so this notion should be somewhat motivated. This idea of closeness makes use think of the inner product given by
+$$
+\langle x,y\rangle =\sum_{i=0}^{K-1} x_i\bar{y_i},
+$$
+and this induces the norm
+$$
+\Vert x\Vert=\sqrt{\langle x,x\rangle}=\sqrt{\sum_{i=0}^{K-1}\Vert x_i\Vert^2}.
+$$
+
+Now, note that the inner product of $v_{k_1}$ and $v_{k_2},$   
+$$
+\frac{1}{K}\sum_{i=0}^{K-1} e^{2\pi ji(k_1-k_2)/K}=\frac{1}{K}\sum_{i=0}^{K-1}\left(e^{2\pi j (k_1-k_2)/K}\right)^i.
+$$
+
+We see that when $k_1=k_2,$ the inner product is one, and if they are diffrent, we can use the geometric series formula to see that it is
+$$
+\frac{1}{K}\frac{e^{2\pi j(k_1-k_2)}-1}{e^{2\pi j(k_1-k_2)/K}-1}=0,
+$$
+as the numerator is zero and the denominator is nonzero, as $|k_1-k_2|<K.$ In other words, we have just shown that $\{v_0,v_1,\dots,v_{K-1}\}$ are orthonormal, and as there are $K$ of them, they form an orthonormal basis. Thus, taking the inner product of some vector $x$ with $v_k$ is just a projection onto that vector, given by
+$$
+\frac{1}{\sqrt{K}}\sum_{i=0}^{K-1}x_ie^{-2\pi j i k/K}.
+$$
+
+This formula turns out to gives $k$th component of what is known as the Discrete Fourier Transform of $x,$ and notice how it's a linear map from $\mathbb{C}^K\to\mathbb{C}^K,$ hence it has a matrix representation, which can be calculated to be
+$$
+F=\frac{1}{\sqrt{K}}
+\begin{bmatrix}
+1&1&1&\dots&1\\
+1&\omega&\omega^2&\dots&\omega^{K-1}\\
+1&\omega^2&\omega^4&\dots&\omega^{2(K-1)}\\
+\vdots&\vdots&\vdots&\ddots&\vdots\\
+1&\omega^{K-1}&\omega^{2(K-1)}&\dots&\omega^{(K-1)^2}
+\end{bmatrix},
+$$
+where $\omega=e^{-2\pi j/K}.$
+
+We can conclude that this matrix is unitary by noting that it transforms an orthonormal basis into another orthonormal basis, or we can just calculate
+$$
+(FF^\dagger)_{ij}=\frac{1}{K}\sum_{k=0}^{K-1}\omega^{(j-i)k}=\delta_{ij}=I.
+$$
+
+As it's unitary, we can implement it efficiently on a Quantum Computer with a circuit known as the Quantum Fourier Transform[^2]. But why do we even want to do this? Consider a vector $x_K$ of length $K$ such that $x_i=\begin{cases}1&i\equiv b\pmod{r}\\0&i\not\equiv b\pmod{r}\end{cases}$ for some $r$ and $b.$ Assume that $r$ divides $K,$ (we'll see soon that this assumption isn't really necessary) and consider  the $nK/r$th component of the DFT of $x_K$ for some $n$:
+
+$$
+\mathrm{DFT}(x_K)_{(nK/r)}=\frac{1}{\sqrt{K}}\sum_{i=0}^{K-1}x_ie^{-2\pi j in/r}=\frac{1}{\sqrt{K}}\sum_{m=0}^{K/r-1}e^{-2\pi jn(mr+b)/r}=\frac{1}{\sqrt{K}}e^{-2\pi j n b/r}\sum_{m=0}^{K/r-1}e^{-2\pi jnm}=\frac{\sqrt{K}}{r}e^{-2\pi j n b/r},
+$$
+as $e^{-2\pi jnm}=1$ for integer $n,m,$ and this has a squared norm of $\frac{K}{r^2}.$ I claim that the squared norm of these components is pretty damn large compared to avergae squared norm of all the components, which will be important soon.
+
+Noting that the DFT is unitary, we can conclude that $\Vert \mathrm{DFT}(x_K)\Vert=\Vert x_K\Vert\approx\sqrt{\frac{K}{r}},$ as approximately $1/r$th of the components are one, while the rest are zero. The equivalence between the 2-norm of a vector and the 2-norm of its DFT is very important in signal processing, and it's know as the Parseval-Plancherel theorem. Trying to prove this from the definition of the DFT takes some work, but for us it falls right out of the unitaritiness of the DFT.
+
+This means that the average squared norm of the components is
+$$
+\frac{1}{K}\sum_{i=0}^{K-1}\Vert\mathrm{DFT}(x_K)_i\Vert^2=\frac{1}{K}\Vert\mathrm{DFT}(x_K)\Vert^2=\frac{1}{K}\Vert x_K\Vert^2\approx\frac{1}{r}.
+$$
+If $K$ is very big compared to $r,$ we see that the squared norm of the $nK/r$th components of the DFT are on the order of $\frac{K}{r^2},$ which is much larger than the average of $\frac{1}{r}.$ Now, you may be wondering about what will happen if $K$ is not a multiple of $r,$ as will be the case very often. This is a valid concern for small $K,$ but as $K$ grows larger, the samples $\frac{2\pi k}{K}$ of $\omega\in[0,2\pi)$ grow finer and finer, and we see that for values very close to $K/r,$ the corresponding component of the DFT have a large magnitude as well, as the Fourier Transform is continuous with respect to $\omega$ (if you're curious, go read about the Discrete-Time Fourier Transform, which is different from the DFT). Peter Shor [calculated](https://arxiv.org/pdf/quant-ph/9508027) that there is around a $\frac{1}{3r}$ chance of getting one of these high probability outcomes, which turns out to be good enough, as we will explain soon.
+
+# Finishing up the Algorithm
+Recall where we left off: the first register is in a superposition of states of the form $\ket{i_0},\ket{i_0+r},\ket{i_0+2r},\dots,$ so we can apply the QFT to the first register with $K=2^{2n},$ and then we will measure the first register. Recall Born's rule, which basically says that the probability of measuring a state is the squared norm of its coefficient, and as we just demonstrated, the states that have a large squared norm are the states of the form $\ket{x}$ for $x\approx \frac{\ell 2^{2n}}{r}$ for some $\ell,$ so these are the most likely states to measure. As we know $2^{2n},$ we can divide by it to get a number close to $\frac{\ell}{r}.$ However, it's not immediately obvious how to extract $r$ from this; we might get unlucky and measure a low probability state that isn't helpful, and even if we do, if $\gcd(\ell,r)>1$ then we won't even be able to figure out $r,$ as it will lose some factors to the numerator. But, it turns out that these concerns aren't too significant. Recall that the number of $\ell<r$ that are coprime to $r$ is given by $\phi(r),$ so we have a $\frac{\phi(r)}{3r}$ chance of getting a number close to a helpful value. But, we can bound $\frac{\phi(r)}{r}>\frac{\delta}{\log(\log( r))},$ for some $\delta,$ according to a theorem from number theory, hence after $O(\log(\log(r)))$ repetitions of this algorithm, we're very likely to get a "good" result. From here, we can take the continued fraction expansion of our measured fraction, which provides a set of rational numbers close to our given number. Testing the denominators of these fractions with fast modular exponentiation with successive squaring on a classical computer, we can find the result quickly, as we know that the order cannot be more than $N$.
+
+
+Remember why we want to find the order of $a$: we wish to factor $a^{r}-1=(a^{r/2}-1)(a^{r/2}+1)\equiv 0\pmod{N},$ and we hope that one of these terms shares a common factor with $N.$ If $r$ happens to be odd, then this factorization won't work, so find a new $a$ and rerun the algorithm. If $r$ is even, there's still a chance that we don't get a common factor, but by the same reasoning as in the quadratic sieve, this only has about a 50\% chance of happening, which means that we only have to run it a few times to find a factor successfully.
+
+# Conclusion
+You probably have a lot of questions after learning about this algorithm, as I certainly did after first learning about it, so I will try to answer what I think the most likely questions are.
+
+**Is Shor's Algorithm going to destroy all of cryptography?** Not yet, at least, and probably not for a while. First, of all, real-life implementations of qubits tend to be extremely noisy and expensive, meaning that using $2048^3\approx8.6\times 10^9$ qubits is absolutely infeasible for the near future, as that would be the size necessary to break an RSA number. But, keep in mind that while people probably said the same about classical bits back when we were using vacuum tubes, right now we have [100 Terabyte](https://nimbusdata.com/products/exadrive/) SSD's in industry use. Nevertheless, there are significantly nontrivial physical limitations in qubit implementations that have to be overcome before we can even think of coming close to this amount, and the largest number that has been factored so far is... 21. And they had to cheat and simplify the algorithm considerably, so there really isn't much to worry about right now. Furthermore, NIST has released [Post-Quantum Cryptography](https://csrc.nist.gov/projects/post-quantum-cryptography) standards, which provide a framework for quantum-resistant cryptosystems.
+
+**Is my Bitcoin Safe?** Theoretically, no. As of now, Bitcoin uses the [Elliptic Curve Digital Signature Algorithm](https://csrc.nist.gov/glossary/term/elliptic_curve_digital_signature_algorithm) to generate private keys, which is a more secure cryptosystem than RSA, but Shor's order-finding quantum algorithm can be modified to theoretically solve this cryptosystem as well. (could elaborate more on elliptic curves) But again, in the foreseeable future, this is absolutely not a concern, and by the time this will become problematic, if ever, I have little doubt that robust quantum-resistant cryptosystems will be developed given the incredible demand.
+
+**Is this unethical?** You may argue that developing algorithms specifically to destroy the most common forms of encryption is unethical, but I'd argue that it's not. First of all, as is worth repeating, this is not going to be a significant threat to any cryptosystem for a very long time (if ever), and in the highly unlikely case that it does become a concern, we will be much more prepared to know when, as well as how to tackle it.
+
+**If it's not useful, then why did you spend an entire blog post on it?** I don't know if you could tell, but I really just wanted to use this as an excuse to show off some really cool math in number theory, linear algebra, and even a tiny bit of signal processing. Sorry for deceiving you, but I hope you took away a lot more from this than ``cryptography is dead.''
+
+
+[^1]: it's better to use the Carmichael lambda function $\lambda(N)=\mathrm{lcm}(p-1,q-1)$ because it has the same power property as totient but allows faster modular inversion, but the totient is simpler to discuss.
+[^2]: you could just think about using Solovay–Kitaev to implement it, but it turns out that there are really [efficient](https://ieeexplore.ieee.org/document/892139) ways to implement the QFT circuit that are a lot better than just applying the algorithm.

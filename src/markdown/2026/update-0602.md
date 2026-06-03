@@ -1,7 +1,7 @@
 ---
 title: '2026 update: a lot of lean4'
 created: '2026 06 02'
-tags: 'mathposting,updates,hide-ls'
+tags: 'mathposting,updates,featured'
 ---
 
 Hi! It has been quite a while since I last wrote a blog post, but I wanted to write an update about what I've been up to for the past little while. In this post, I want to talk about all the Lean4 stuff I've done, and after this quarter is over I will probably post some class projects and notes for anything marginally interesting. As I'm writing this though, there is still 1 more week until finals...
@@ -82,7 +82,9 @@ grw (r₂) (rule : r₁ X X') (expr) : Option (r₂ expr expr') :=
 
 This function uses a binary relation `r₂` and some `rule` (which is an instance of that binary relation) to rewrite an expression `expr` into a new `expr'`, returning the data that `expr` and `expr'` are also related by `r₂`. For example, if we take `r₂ := Equals` and `rule : a = b`, then trying to rewrite `f a` should return `f a = f b`. In general though, our relation can be isomorphisms or inequalities, and the `r₂ expr expr'` type does NOT have to be a proposition! To perform rewrites, we simply look for lemmas/definitions that return a `r₂` type where the left-hand side of the relation matches our expression.
 
-Then, we simply apply that lemma and recurse down into rewriting the hypotheses that went into the lemma, falling back to using reflexivity if we cannot perform a rewrite on any hypothesis. For example, say our `expr` was `a ⨯ b` and we are applying the lemma `binary_prod (h₁ : x ≅ x') (hy₂ : y ≅ y') : x ⨯ y ≅ x' ⨯ y'` to rewrite with the rule `a ≅ a'`. Note that `x` `x'` `y` and `y'` at this point are all metavariables that we need to unify with the real variables `a` `b` and `a'`. First, we match the left hand side of the result type to our expression, so we unify `x ⨯ y` with `a ⨯ b` (`x` is now `a` and `y` is `b`). Now we recurse to rewrite the left hand side of `h₁ : a ≅ x'` using our rule `a ≅ a'`. In the recursive call we just use the rule directly to rewrite `a`, so we get back `h₁ : a ≅ a'`, i.e. `x'` becomes `a'`. We recurse again to try to rewrite `b` in `h₂ : b ≅ y'`, but we cannot rewrite `b` with our rule about `a` so we just use reflexivity for `b` as `h₂`. Thus, `y'` is `b`, and `h₂ : b ≅ b`. Overall, `binary_prod h₁ h₂ : a ⨯ b ≅ a' ⨯ b`, and we have performed the expected rewrite!
+Then, we simply apply that lemma and recurse down into rewriting the hypotheses that went into the lemma, falling back to using reflexivity if we cannot perform a rewrite on any hypothesis. For example, say our `expr` was `a ⨯ b` and we are applying the lemma `binary_prod (h₁ : x ≅ x') (hy₂ : y ≅ y') : x ⨯ y ≅ x' ⨯ y'` to rewrite with the rule `a ≅ a'`. Note that `x` `x'` `y` and `y'` at this point are all metavariables that we need to unify with the real variables `a` `b` and `a'`.
+
+First, we match the left hand side of the result type to our expression, so we unify `x ⨯ y` with `a ⨯ b` (`x` is now `a` and `y` is `b`). Now we recurse to rewrite the left hand side of `h₁ : a ≅ x'` using our rule `a ≅ a'`. In the recursive call we just use the rule directly to rewrite `a`, so we get back `h₁ : a ≅ a'`, i.e. `x'` becomes `a'`. We recurse again to try to rewrite `b` in `h₂ : b ≅ y'`, but we cannot rewrite `b` with our rule about `a` so we just use reflexivity for `b` as `h₂`. Thus, `y'` is `b`, and `h₂ : b ≅ b`. Overall, `binary_prod h₁ h₂ : a ⨯ b ≅ a' ⨯ b`, and we have performed the expected rewrite!
 
 Note that in the general case, we can mix different binary relations. With this primitive, we can implement some basic logic to be able to rewrite goals:
 ```lean

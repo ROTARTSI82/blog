@@ -1,56 +1,79 @@
 @import "tailwindcss";
 
-:not(#navbar) > a {
-    @apply hover:underline text-blue-500 hover:text-blue-600;
+:not(#navbar)>a {
+  @apply hover:underline text-blue-500 hover:text-blue-600;
 }
 
 h1 {
-    @apply text-2xl font-bold mt-4;
+  @apply text-2xl font-bold mt-4;
 }
 
-h2, h3, h4, h5, h6 {
-    @apply text-2xl font-bold mt-3 ml-1 leading-tight;
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply text-2xl font-bold mt-3 ml-1 leading-tight;
 }
 
 p {
-    @apply indent-2 mt-4;
+  @apply indent-2 mt-4;
 }
 
 table {
-    @apply table-auto border text-center mt-6 mb-8 mx-auto;
+  @apply table-auto border text-center mt-6 mb-8 mx-auto;
 }
 
-th, td {
-    @apply px-4 py-2 border;
+th,
+td {
+  @apply px-4 py-2 border;
 }
 
 th {
-    @apply font-bold bg-gray-200;
+  @apply font-bold bg-gray-200;
 }
 
-ul, ol {
-    @apply list-outside mt-2 pl-6;
-    li {
-        @apply leading-tight ml-2;
-    }
-}
-
-ul { @apply list-disc; }
+ul,
 ol {
-    @apply list-decimal;
-    ol {
-        <!-- todo: change this to be different -->
-    }
+  @apply list-outside mt-2 pl-6;
+
+  li {
+    @apply leading-tight ml-2;
+  }
+}
+
+ul {
+  @apply list-disc;
+}
+
+ol {
+  @apply list-decimal;
+
+  ol {}
 }
 
 textarea {
-    @apply border m-4 p-2 mb-2 pb-0;
+  @apply border m-4 p-2 mb-2 pb-0;
 }
 
 button {
-    @apply bg-teal-200 hover:bg-teal-400 px-4 py-1 mx-4 my-1;
+  @apply bg-teal-200 hover:bg-teal-400 px-4 py-1 mx-4 my-1;
 }
 
 hr {
-    @apply my-1 mt-2;
+  @apply my-1 mt-2;
+}
+
+/* Accessibility utility for screen readers, text browsers, and Reader Mode */
+.raw-tex {
+  position: absolute !important;
+  left: -9999px !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
 }

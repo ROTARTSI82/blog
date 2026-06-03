@@ -21,6 +21,8 @@
     "bootstrap": "^5.3.8",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.10.0",
+    "hast-util-to-text": "^4.0.2",
+    "hastscript": "^9.0.1",
     "katex": "^0.16.47",
     "mathjax": "^3.2.2",
     "mdx": "^0.3.1",
