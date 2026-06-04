@@ -2,6 +2,7 @@
 title: '2026 update: a lot of lean4'
 created: '2026 06 02'
 tags: 'mathposting,updates,featured'
+subhead: "I am alive. An update about the Lean4 things I have been up to the past few months, specifically my work in the UW Math AI Lab and UW's first Lean Hackathon!"
 ---
 
 Hi! It has been quite a while since I last wrote a blog post, but I wanted to write an update about what I've been up to for the past little while. In this post, I want to talk about all the Lean4 stuff I've done, and after this quarter is over I will probably post some class projects and notes for anything marginally interesting. As I'm writing this though, there is still 1 more week until finals...
