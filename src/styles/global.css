@@ -8,6 +8,10 @@ h1 {
   @apply text-2xl font-bold mt-4;
 }
 
+.ls-entry-pad~a {
+  @apply ml-3;
+}
+
 h2,
 h3,
 h4,

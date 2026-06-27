@@ -74,6 +74,7 @@ const opt: Intl.DateTimeFormatOptions = {year: 'numeric', month: 'short', day: '
 			{posts.map((post) => <li>
 					{post.data.created.toLocaleDateString(undefined, opt)}
 					<!--<code class="ml-auto">{path.join('/')}/</code>-->
+					<span class="ls-entry-pad"/>
 					<a href={link(`/blog/${post.id}/`)}>
 						{post.data.title}
 					</a>
