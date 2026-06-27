@@ -1,10 +1,11 @@
 ---
 title: 'notes & review of freshman year @ uw'
+subhead: "this is a crashout. don't let it go to waste. this is a crashout."
 created: 'Jun 26 2026'
 tags: ""
 ---
 
-Hi! I wanted to publish some notes for the classes I've taken this year for no particular reason. If you're curious what the first year of an engineering major is like at UW, here are my short 1-sentence reviews for some of the classes I took. Honestly though, I might not be the most unbiased source out there...
+Hi! I wanted to publish some notes for the classes I've taken this year for no particular reason. If you're curious what the first year of an engineering major is like at UW, here are my short reviews for some of the classes I took. Honestly though, I might not be the most unbiased source out there...
 
 + [**MATH 380**: Computational Algebraic Geometry](/granty29/blog/2026/notes/math380/) - _Cynthia Vinzant, Spring 2026_.
   As you'd expect, this is a very cool class. The central thing is Groebner Bases, and the course is built around "Ideals, Varieties, and Algorithms" by Cox, Little, and O'Shea. Very similar vibe to info theory honestly, though with more emphasis on proof-based math (as expected). To the surprise of nobody, this is probably my favorite class I took this year. Prof Vinzant's lectures were really really good, introducing a concept and working through sufficient detail to build to a neat payoff.
