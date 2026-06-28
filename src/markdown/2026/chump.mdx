@@ -1,0 +1,139 @@
+---
+title: 'chump pcb'
+subhead: 'spending 6 hours soldering and pretending i am having fun. a 4-bit computer made from ttl logic chips.'
+created: 'Jun 27 2026'
+tags: 'featured'
+---
+
+import { Image } from 'astro:assets';
+import schematic from '../../assets/2026/schematic2.png';
+import pcb2 from '../../assets/2026/pcb2.png';
+import pcb from '../../assets/2026/pcb.png';
+import vert from '../../assets/2026/IMG_3418.jpeg';
+import top from '../../assets/2026/IMG_3421.jpeg';
+import backside from '../../assets/2026/IMG_3422.jpeg';
+
+I thought I'd post this project that I did this year, making a 4-bit computer from TTL logic chips. It's a reimplementation of the final project for the [computer architecture](/granty29/blog/2025/comparch/) elective at harker, based on the following paper:
+
++ Feinberg, David. "A Simple and Affordable TTL Processor for the Classroom". https://doi.org/10.1184/R1/6591362.
+
+## Table of contents
+{/* toc */}
+
+## Schematic and PCB
+
+First, I drew up a schematic in KiCAD and designed a PCB. You can download the project files [here](/granty29/2026/chump_pcb.zip).
+
+<Image src={schematic} style="margin: 1em auto;" alt="schematic of the CHUMP computer" />
+
+<Image src={pcb} class="img66" alt="pcb for the CHUMP board" />
+
+<Image src={pcb2} class="img66" alt="alternate view of CHUMP pcb" />
+
+I honestly yolo'd this design for the PCB, and the wiring was mostly done greedily and by vibe. I actually had to restart doing the traces halfway through my first attempt since I did not know what I was doing. Anyways, I sent this 4-layer PCB off to JLC PCB for $48 and thankfully everything worked first try. Never punished. 
+
+<br/>
+
+## Instruction Set & ROMs
+
+| Instruction   |   op7 `a2` |   op6 `a1` |   op5 `a0` |   op4/sel | ALU     |   S3 `c7` |   S2 `c6` |   S1 `c5` |   S0 `c4` |   M `c3` | Cn (=`c4`)   |   Acc `c2` |   RW `c1` |   PC `c0` | hex   |
+|:--------------|------:|------:|------:|------:|:--------|-----:|-----:|-----:|-----:|----:|:-----|------:|-----:|-----:|:------|
+| LOAD const    |     0 |     0 |     0 |     0 | B       |    1 |    0 |    1 |    0 |   1 | x    |     0 |    1 |    0 | AA    |
+| LOAD it       |     0 |     0 |     0 |     1 | B       |    1 |    0 |    1 |    0 |   1 | x    |     0 |    1 |    0 | AA    |
+| ADD const     |     0 |     0 |     1 |     0 | A+B     |    1 |    0 |    0 |    1 |   0 | 1    |     0 |    1 |    0 | 92    |
+| ADD it        |     0 |     0 |     1 |     1 | A+B     |    1 |    0 |    0 |    1 |   0 | 1    |     0 |    1 |    0 | 92    |
+| SUB const     |     0 |     1 |     0 |     0 | A-B-1   |    0 |    1 |    1 |    0 |   0 | 0    |     0 |    1 |    0 | 62    |
+| SUB it        |     0 |     1 |     0 |     1 | A-B-1   |    0 |    1 |    1 |    0 |   0 | 0    |     0 |    1 |    0 | 62    |
+| STORETO const |     0 |     1 |     1 |     0 | A       |    1 |    1 |    1 |    1 |   1 | x    |     1 |    0 |    0 | FC    |
+| STORETO it    |     0 |     1 |     1 |     1 | A       |    1 |    1 |    1 |    1 |   1 | x    |     1 |    0 |    0 | FC    |
+| READ const    |     1 |     0 |     0 |     0 | A       |    1 |    1 |    1 |    1 |   1 | x    |     1 |    1 |    0 | FE    |
+| READ it       |     1 |     0 |     0 |     1 | A       |    1 |    1 |    1 |    1 |   1 | x    |     1 |    1 |    0 | FE    |
+| JMP const     |     1 |     0 |     1 |     0 | Logic 1 |    1 |    1 |    0 |    0 |   1 | x    |     1 |    1 |    1 | CF    |
+| JMP it        |     1 |     0 |     1 |     1 | Logic 1 |    1 |    1 |    0 |    0 |   1 | x    |     1 |    1 |    1 | CF    |
+| JEZ const     |     1 |     1 |     0 |     0 | Not A   |    0 |    0 |    0 |    0 |   1 | x    |     1 |    1 |    1 | 0F    |
+| JEZ it        |     1 |     1 |     0 |     1 | Not A   |    0 |    0 |    0 |    0 |   1 | x    |     1 |    1 |    1 | 0F    |
+
+
+And I loaded a program to print out the fibonacci numbers on the LEDS:
+```
+ 0    LOAD 1
+ 1    STORETO 0  # ram location 0 holds f(n)
+ 2    STORETO 1  # ram location 1 holds f(n-1)
+
+ 3    READ 0
+ 4    LOAD
+ 5    READ 1
+ 6    ADD
+ 7    STORETO 1  # ram location 1 = f(n+1)
+
+ 8    READ 0
+ 9    ADD
+10    STORETO 0  # ram location 0 = f(n)+f(n+1) = f(n+2)
+
+11    JMP 3
+```
+
+I used the same program and python script shown in [the original chump post](/granty29/blog/2025/comparch/). Contents of the program rom (`U6`) and control rom (`U7`):[^1]
+```
+$ hexdump -C ctrl_rom.bin
+00000000  aa 92 62 fc fe cf 0f 55  55 55 55 55 55 55 55 55  |..b....UUUUUUUUU|
+00000010  55 55 55 55 55 55 55 55  55 55 55 55 55 55 55 55  |UUUUUUUUUUUUUUUU|
+*
+00002000
+
+$ hexdump -C program_rom.bin
+00000000  01 60 61 80 10 81 30 61  80 30 60 a3 55 55 55 55  |.`a...0a.0`.UUUU|
+00000010  55 55 55 55 55 55 55 55  55 55 55 55 55 55 55 55  |UUUUUUUUUUUUUUUU|
+*
+00002000
+```
+
+I programmed the AT28C64B EEPROMs with a XGecu Pro T48 programmer, using the [minipro](https://gitlab.com/DavidGriffith/minipro/) software tool. This EEPROM programmer ended up being the most expensive part at around $70, even more so than shipping a custom PCB all the way from China.
+
+[^1]: 🫴 six sevennnn 🫴
+
+## Buying shit from Jameco
+
+I actually messed up here a bit, as I did not assign the correct footprint to some of my parts. The push button is scuffed, as the legs did not fit through the holes on the PCB so I just tacked it on with balls of solder on the pads. Also, the single pole double throw switch was completely incorrect. For the switch, I had to solder in some header pins and just use some jumper wires to connect to the switch.
+
+| Item Number | Manufacturer P/N | Description | Quantity | Total |
+| :--- | :--- | :--- | :--- | :--- |
+| 46973 | SN74LS181N | IC, 74LS181N, DIP-24, ARITHM. LOGIC UNIT/FUNCT GENERATOR (.600"W IC, 74LS181N,DI | 1 | $6.60 |
+| 46931 | 74LS174 | IC, 74LS174N, DIP-16, HEX D-TYPE FLIP-FLOP W/CLEAR HEX D- TYPE FLIP-FLOP DIP- | 1 | $1.23 |
+| 46818 | 74LS161 | IC, 74LS161N,DIP-16, 4BIT SYNCHRONOUS BINARY COUNTR 4- BIT SYNCHRONOUS BINARY | 1 | $1.00 |
+| 46771 | 74LS157 | IC, 74LS157N, DIP-16, QUAD 2-TO-1 LINE DATA SELECTOR QUAD 2-TO-1 LINE DATA SE | 1 | $0.94 |
+| 46640 | SN74LS14N | IC, 74LS14N, DIP-14, HEX SCHMITT-TRIGGER INVERTER HEX SCHMITT TRIGGER INVERTE | 1 | $0.66 |
+| 46252 | SN74LS00N | IC, 74LS00, DIP-14, QUAD 2-INPUT POS. NAND GATE QUAD 2- INPUT POSITIVE NAND GAT | 1 | $0.71 |
+| 126797 | LMC555CN | IC,LMC555CN (TLC555CP) CMOS TIMER, 8-PIN DIP IC TS555CN CMOS Single (555) Lo | 1 | $1.32 |
+| 48004 | 74LS74 | IC, 74LS74N, DIP-14, DUAL D-TYPE FLIP-FLOP DUAL D-TYPE FLIP-FLOP DIP-14 | 1 | $0.56 |
+| 46359 | 74LS06 | IC, 74LS06N, DIP-14, HEX INVERTER BUFFER/DRIVER HEX INVERTER BUFFER/DRIVER DIP | 1 | $0.85 |
+| 74827 | AT28C64B-15P | IC, EEPROM, 28C64B-15,5V 8kx8,DIP-28,150ns IC, EEPROM,28C64B-15,5V 8kx8,DIP-28 | 2 | $10.74 |
+| 661757 | CF1/2W103JRC | @RES,CF, 10K OHM, 1/2 WATT, 5%, (10 BAG) Resistor Carbon Film 10k Ohm 1/2 Watt | 10 | $0.95 |
+| 691622 | CF1/4W155JRC | @RES,CF, 1.5M OHM, 1/4 WATT,5%, (10 BAG) Resistor Carbon Film 1.5M Ohm 1/4 Wa | 10 | $0.43 |
+| 2237175 | RC1W330EJT | @RES,CF,330 OHM, 1 WATT, 5% (10 BAG) Resistor Carbon Film 330 Ohm 1 Watt 5% | 10 | $1.33 |
+| 2237191 | CF1W102JRC | @RES,CF, 1K OHM, 1 WATT,5% (10 BAG) Resistor Carbon Film 1K Ohm 1 Watt 5% | 10 | $1.33 |
+| 2237204 | RC1W2K20JT | @RES,CF,2.2K OHM,1 WATT,5% (10 BAG) Resistor Carbon Film 2.2K Ohm 1 Watt 5% | 10 | $1.33 |
+| 333973 | UT1871-81-M1-R | @LED,RED, 643NM,T-1 3/4, 75MCD,2.2V,V/A30,(10) LED Red Diffused 5mm T1-3/4 6 | 10 | $1.43 |
+| 2357287 | C320C104M5R5TA-JVP | @CAP,MONO CER, RAD, 0.1uF, 50V, 20%, X7R, R20XR104M05L1YS, (10) @CAP,MONO CER,RAD | 10 | $1.14 |
+| 33662 | TAP105K035SCS | CAP, TANT, 1uF, 35V, 10%, 4.2Dx6Hx3LSmm 1 uF 35 Volt Tantalum Capacitor | 3 | $1.68 |
+| 137673 | DC-470-2P-R | PLUG,DC PWR, FEM,2.1X5.5mm,SLDR LUG, PC MNT,RT/ANGLE14.5mm L Connector Power | 1 | $0.47 |
+| 155249 | ADTS31NV -JVP | SW,PB,TACT, SPST, OFF-(ON), OFF-(ON)50mA@12VDC, BLK,KRS- 3550-BK-Black SPST Mom | 1 | $0.33 |
+| 2314127 | EG218 | SWITCH, SLIDE, SPDT, ON-ON.5A@50VDC, 3PIN PCB, BRD BD.31x. 16x.39" SWITCH, SLIDE,S | 1 | $0.81 |
+| 2288607 | PH1-36-UA | HEADER, STRAIGHT, MALE, 1RW, 36PIN,. 1"CTR, 025"PST,.23", GOL DTAIL HEADER, MALE, 1 | 1 | $0.85 |
+| 48557 | SN74S189N | IC,74S189N, STATIC RAM, 16x4, TTL, 16-PIN-DIP IC,745189 | 1 | $4.65 |
+| 47669 | SN74LS377N | IC, 74LS377N, DIP-20, OCTAL D-TYPE FLIP-FLOP OCTAL D-TYPE FLIP-FLOP DIP-20 | 2 | $2.38 |
+
+I also bought a 5V DC power brick with a barrel jack connector off Amazon.
+
+## Photos!
+
+After acquiring everything, I proceeded to spend like 6 hours in Area01's Dabble Lab hand soldering all the components into the board, pretending to have fun. Here are the fruits of my labor.
+
+Ignore how dirty my PCB is, I did not clean the flux off after I soldered and now it's disgusting.
+
+<Image class="img66" src={top} alt="top view of the pcb" />
+<Image class="img66" src={backside} alt="backside of the pcb" />
+<Image class="img66" style='max-width: 50%' src={vert} alt="CHUMP in operation" />
+
+
+There you go! For about $150, you too can make an awful 4-bit computer. This post should have everything you need to recreate this monstrosity if for some reason you wish to.

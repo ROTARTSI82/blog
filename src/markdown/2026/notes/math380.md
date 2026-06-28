@@ -2,7 +2,7 @@
 title: 'math 380: computational algebraic geometry'
 subhead: 'class notes. prof cynthia vinzant, spring 2026 at uw.'
 created: 'Jun 26 2026'
-tags: 'hide-ls,featured'
+tags: 'hide-ls'
 ---
 
 Hi! These are my notes for MATH 380. These notes are part of this [larger collection](/granty29/blog/2026/notes/) of notes from my freshman year at UW.

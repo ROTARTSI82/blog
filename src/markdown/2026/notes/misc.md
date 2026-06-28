@@ -294,7 +294,7 @@ Simple Harmonic Motion
 
 Energy conservation
 
-```mathematica
+```
 In[14]:= x[t_] := A Cos[Sqrt[k/m] t + \[Phi]]
 In[15]:= 1/2 k x[t]^2 + 1/2 m (x'[t])^2
 Out[15]= 

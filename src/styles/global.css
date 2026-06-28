@@ -20,6 +20,10 @@ h6 {
   @apply text-2xl font-bold mt-3 ml-1 leading-tight;
 }
 
+.img66 {
+  @apply mx-auto my-3 max-w-2/3;
+}
+
 p {
   @apply indent-2 mt-4;
 }

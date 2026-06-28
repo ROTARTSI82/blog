@@ -2,7 +2,7 @@
 title: 'notes & review of freshman year @ uw'
 subhead: "this is a crashout. don't let it go to waste. this is a crashout."
 created: 'Jun 26 2026'
-tags: ""
+tags: "featured"
 ---
 
 Hi! I wanted to publish some notes for the classes I've taken this year for no particular reason. If you're curious what the first year of an engineering major is like at UW, here are my short reviews for some of the classes I took. Honestly though, I might not be the most unbiased source out there...
@@ -26,7 +26,7 @@ Hi! I wanted to publish some notes for the classes I've taken this year for no p
 
 
 Other classes I took:
-+ **CSE 123** - the CS class where the graders ragebait you. "Demarks for javadoc that reveals implementation details 🤓🤓". Who came up with the weird E/S/N grading system?
++ **CSE 123** - the CS class where the graders ragebait you. "Demarks for javadoc that reveals implementation details 🤓🤓". Who came up with the weird E/S/N grading system? Shoutout Benoit Le though, he's the goat.
 + **GEN ST 190** and **ENGR 101** - These classes really only succeeded at making me kind of hate the college of engineering, and especially the Human Centered Design and Engineering major. Who wouldn't want a career designing dark patterns for Netflix?
 + **E E 201** - Really weird class. Lectures were very strange-- we spent multiple lectures on horrible explanations of PID when the most we did was just trial and error our PID values until our car worked. My guy also _really_ wanted us to use AI. The entire EE department seems really into AI and honestly there are a lot of grifter vibes...
 + **ENGL 282** - Composition class with some truly whacky readings. Seriously, I felt like I was going insane reading some of them, especially [this essay](https://static1.squarespace.com/static/57e07645e6f2e1f209bad8f9/t/67bdf45ad016d374673c111d/1740502106900/jur_volume_13_questioning_environmental.pdf) about how CSU needs to incorporate queer and ethnic studies and "native ways of knowing" into it's environmental education program. The class discussion was also not real, where everyone seemed to ignore the crazy jargon and language and instead just had a discussion at the level of "man we should do something about corporations doing climate change"? I honestly think people just didn't read it.
