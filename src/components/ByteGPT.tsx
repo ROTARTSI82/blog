@@ -52,18 +52,19 @@ const ByteGPTApp = () => {
     const [temp, setTemp] = useState(0.8);
     const [topK, setTopK] = useState(40);
     const [stats, setStats] = useState({ tokPerSec: 0, perplexity: 0 });
-    const [cursorPos, setCursorPos] = useState(0);
+    const [cursorPos, setCursorPos] = useState(0); // string cursor index
     const [isInferring, setIsInferring] = useState(false);
     
     const [inspectData, setInspectData] = useState(null);
     const [layer, setLayer] = useState(0);
     const [head, setHead] = useState(0);
     const [showRaw, setShowRaw] = useState(false);
+    const [hoveredAttn, setHoveredAttn] = useState(null);
     
     const backdropRef = useRef(null);
     
     const engineRef = useRef({
-        text: "",
+        bytes: new Uint8Array(0),
         probs: [], 
         engineCursor: 0, 
         lastTypeTime: Date.now(),
@@ -73,21 +74,25 @@ const ByteGPTApp = () => {
         lastInspectPos: -1
     });
     
-    const textRef = useRef(text);
+    const targetBytesRef = useRef(new Uint8Array(0));
     const tempRef = useRef(temp);
     const topKRef = useRef(topK);
-    const inspectPosRef = useRef(cursorPos);
+    const inspectStrPosRef = useRef(cursorPos);
     const isInferringRef = useRef(isInferring);
     
     const [renderTick, setRenderTick] = useState(0);
+
+    // Initial setup of targetBytes
+    useEffect(() => {
+        targetBytesRef.current = new TextEncoder().encode(text);
+    }, []);
     
     useEffect(() => {
-        textRef.current = text;
         tempRef.current = temp;
         topKRef.current = topK;
-        inspectPosRef.current = cursorPos;
+        inspectStrPosRef.current = cursorPos;
         isInferringRef.current = isInferring;
-    }, [text, temp, topK, cursorPos, isInferring]);
+    }, [temp, topK, cursorPos, isInferring]);
 
     useEffect(() => {
         const init = async () => {
@@ -102,7 +107,7 @@ const ByteGPTApp = () => {
         
         const loadModel = async () => {
             try {
-                if (!window.Module._malloc) return; // wait for runtime
+                if (!window.Module._malloc) return;
                 const response = await fetch('/granty29/2026/bytegpt/rawmodel.bin');
                 const buffer = await response.arrayBuffer();
                 const bytes = new Uint8Array(buffer);
@@ -122,112 +127,138 @@ const ByteGPTApp = () => {
         if (!ready) return;
         
         let active = true;
+        const decoder = new TextDecoder('utf-8', { fatal: false });
         
         const loop = () => {
             if (!active) return;
             
             const state = engineRef.current;
-            const targetText = textRef.current;
+            const targetBytes = targetBytesRef.current;
             
             let changed = false;
             
-            if (state.text !== targetText) {
-                let diffIdx = 0;
-                while (diffIdx < targetText.length && diffIdx < state.text.length && targetText[diffIdx] === state.text[diffIdx]) {
-                    diffIdx++;
+            let diffIdx = 0;
+            while (diffIdx < targetBytes.length && diffIdx < state.bytes.length && targetBytes[diffIdx] === state.bytes[diffIdx]) {
+                diffIdx++;
+            }
+            
+            if (diffIdx < state.bytes.length) {
+                if (Date.now() - state.lastTypeTime < 300) {
+                    requestAnimationFrame(loop);
+                    return; 
                 }
+                state.bytes = state.bytes.slice(0, diffIdx);
+                state.probs = state.probs.slice(0, diffIdx);
                 
-                if (diffIdx < state.text.length) {
-                    if (Date.now() - state.lastTypeTime < 300) {
-                        requestAnimationFrame(loop);
-                        return; 
-                    }
-                    state.text = state.text.substring(0, diffIdx);
-                    state.probs = state.probs.slice(0, diffIdx);
-                    
-                    if (diffIdx > 0) {
-                        window.Module.ccall('seek', 'number', ['number'], [diffIdx - 1]);
-                        window.Module.ccall('predict_next', 'number', ['number'], [targetText.charCodeAt(diffIdx - 1) & 255]);
+                if (diffIdx > 0) {
+                    window.Module.ccall('seek', 'number', ['number'], [diffIdx - 1]);
+                    window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[diffIdx - 1]]);
+                } else {
+                    window.Module.ccall('seek', 'number', ['number'], [0]);
+                }
+                state.engineCursor = diffIdx;
+                
+                state.totalNLL = 0;
+                for(let i = 0; i < state.probs.length; i++) {
+                    if (state.probs[i] > 0) state.totalNLL -= Math.log(state.probs[i]);
+                }
+                changed = true;
+            }
+            
+            let charsProcessed = 0;
+            while (state.bytes.length < targetBytes.length && charsProcessed < 5) {
+                if (state.engineCursor !== state.bytes.length) {
+                    if (state.bytes.length > 0) {
+                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length - 1]);
+                        window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[state.bytes.length - 1]]);
                     } else {
                         window.Module.ccall('seek', 'number', ['number'], [0]);
                     }
-                    state.engineCursor = diffIdx;
-                    
-                    state.totalNLL = 0;
-                    for(let i = 0; i < state.probs.length; i++) {
-                        if (state.probs[i] > 0) state.totalNLL -= Math.log(state.probs[i]);
-                    }
-                    changed = true;
+                    state.engineCursor = state.bytes.length;
                 }
                 
-                let charsProcessed = 0;
-                while (state.text.length < targetText.length && charsProcessed < 5) {
-                    if (state.engineCursor !== state.text.length) {
-                        if (state.text.length > 0) {
-                            window.Module.ccall('seek', 'number', ['number'], [state.text.length - 1]);
-                            window.Module.ccall('predict_next', 'number', ['number'], [targetText.charCodeAt(state.text.length - 1) & 255]);
-                        } else {
-                            window.Module.ccall('seek', 'number', ['number'], [0]);
-                        }
-                        state.engineCursor = state.text.length;
-                    }
+                let nextByte = targetBytes[state.bytes.length];
+                let prob = 1.0;
+                
+                if (state.bytes.length > 0) {
+                    let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
+                    let logits = new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256);
                     
-                    let nextByte = targetText.charCodeAt(state.text.length) & 255;
-                    let prob = 1.0;
-                    
-                    if (state.text.length > 0) {
-                        let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
-                        let logits = new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256);
-                        
-                        let maxLogit = -Infinity;
-                        for(let i=0; i<256; i++) if(logits[i] > maxLogit) maxLogit = logits[i];
-                        let sum = 0;
-                        let t = tempRef.current || 1.0;
-                        for(let i=0; i<256; i++) sum += Math.exp((logits[i] - maxLogit) / t);
-                        prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
-                    }
-                    
-                    state.probs.push(prob);
-                    if (prob > 0) state.totalNLL -= Math.log(prob);
-                    
-                    window.Module.ccall('predict_next', 'number', ['number'], [nextByte]);
-                    state.engineCursor++;
-                    state.text += targetText[state.text.length];
-                    state.tokCount++;
-                    
-                    charsProcessed++;
-                    changed = true;
+                    let maxLogit = -Infinity;
+                    for(let i=0; i<256; i++) if(logits[i] > maxLogit) maxLogit = logits[i];
+                    let sum = 0;
+                    let t = tempRef.current || 1.0;
+                    for(let i=0; i<256; i++) sum += Math.exp((logits[i] - maxLogit) / t);
+                    prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
                 }
-            } else if (isInferringRef.current && targetText.length < 4096) {
-                if (state.engineCursor !== state.text.length) {
-                    if (state.text.length > 0) {
-                        window.Module.ccall('seek', 'number', ['number'], [state.text.length - 1]);
-                        window.Module.ccall('predict_next', 'number', ['number'], [targetText.charCodeAt(state.text.length - 1) & 255]);
+                
+                state.probs.push(prob);
+                if (prob > 0) state.totalNLL -= Math.log(prob);
+                
+                window.Module.ccall('predict_next', 'number', ['number'], [nextByte]);
+                state.engineCursor++;
+                
+                let newBytes = new Uint8Array(state.bytes.length + 1);
+                newBytes.set(state.bytes);
+                newBytes[state.bytes.length] = nextByte;
+                state.bytes = newBytes;
+                
+                state.tokCount++;
+                charsProcessed++;
+                changed = true;
+            }
+            
+            if (isInferringRef.current && targetBytes.length < 4096 && state.bytes.length === targetBytes.length) {
+                if (state.engineCursor !== state.bytes.length) {
+                    if (state.bytes.length > 0) {
+                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length - 1]);
+                        window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[state.bytes.length - 1]]);
                     } else {
                         window.Module.ccall('seek', 'number', ['number'], [0]);
                     }
-                    state.engineCursor = state.text.length;
+                    state.engineCursor = state.bytes.length;
                 }
                 
                 let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
                 let logits = new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256);
                 
                 let nextByte = sampleLogits(logits, tempRef.current, topKRef.current);
-                let newChar = String.fromCharCode(nextByte);
                 
-                setText(t => t + newChar);
-                textRef.current += newChar;
+                let newTarget = new Uint8Array(targetBytes.length + 1);
+                newTarget.set(targetBytes);
+                newTarget[targetBytes.length] = nextByte;
+                targetBytesRef.current = newTarget;
+                
+                let newText = decoder.decode(newTarget);
+                setText(newText);
+                
                 state.lastTypeTime = Date.now();
             }
             
-            if (state.text === targetText && inspectPosRef.current !== state.lastInspectPos) {
-                const pos = inspectPosRef.current;
-                state.lastInspectPos = pos;
+            // Map string cursor position to byte cursor position
+            // Since we may have typed into the textarea or inferred, we use current targetBytesRef
+            // The cursor is at `inspectStrPosRef.current` characters into the string.
+            // We need to encode the substring up to that point.
+            // But wait! If targetText was just decoded from targetBytes, we can just encode text.substring(0, inspectStrPosRef)
+            // But wait! React state `text` might lag behind `targetBytesRef` by a few ms, but that's fine.
+            
+            // We can just use the React state `text`? No, we don't have access to the fresh `text` state here if it wasn't captured.
+            // Actually, we can get `text` from a ref if we added one, but we didn't add textRef in the deps this time.
+            // Wait, we DO have textRef (wait, I removed textRef?). Let's add textRef back for this!
+            
+            // Wait, I will just let the loop run. Let's finish the script.
+            // Wait, I will just use the DOM! Actually `textRef` is still declared in the full file!
+            // I will use textRef.current to get the current string.
+            let textToCursor = textRef.current.substring(0, inspectStrPosRef.current);
+            let bytePos = new TextEncoder().encode(textToCursor).length;
+            
+            if (state.bytes.length === targetBytes.length && bytePos !== state.lastInspectPos) {
+                state.lastInspectPos = bytePos;
                 
-                if (pos > 0 && pos <= state.text.length) {
-                    window.Module.ccall('seek', 'number', ['number'], [pos - 1]);
-                    window.Module.ccall('predict_next', 'number', ['number'], [state.text.charCodeAt(pos - 1) & 255]);
-                    state.engineCursor = pos;
+                if (bytePos > 0 && bytePos <= state.bytes.length) {
+                    window.Module.ccall('seek', 'number', ['number'], [bytePos - 1]);
+                    window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[bytePos - 1]]);
+                    state.engineCursor = bytePos;
                     
                     let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
                     let logitsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256));
@@ -235,7 +266,7 @@ const ByteGPTApp = () => {
                     let statsPtr = window.Module.ccall('get_stats', 'number', [], []);
                     let statsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, statsPtr, 24 * 8 * 4096));
                     
-                    setInspectData({ logits: logitsCopy, stats: statsCopy, pos });
+                    setInspectData({ logits: logitsCopy, stats: statsCopy, pos: bytePos });
                 } else {
                     setInspectData(null);
                 }
@@ -256,6 +287,12 @@ const ByteGPTApp = () => {
         requestAnimationFrame(loop);
         return () => { active = false; };
     }, [ready]);
+
+    // Track textRef for the byte cursor mapping
+    const textRef = useRef(text);
+    useEffect(() => {
+        textRef.current = text;
+    }, [text]);
 
     const handleKeyDown = (e) => {
         if (e.key === 'ArrowUp') {
@@ -296,13 +333,50 @@ const ByteGPTApp = () => {
         return items.slice(0, 10);
     };
 
-    const [hoveredAttn, setHoveredAttn] = useState(null);
+    const renderHighlights = () => {
+        let spans = [];
+        let i = 0;
+        let decoder = new TextDecoder('utf-8', { fatal: false });
+        let probs = engineRef.current.probs;
+        let bytes = targetBytesRef.current;
+        
+        while (i < bytes.length) {
+            let byte = bytes[i];
+            let len = 1;
+            if ((byte & 0x80) === 0) len = 1;
+            else if ((byte & 0xE0) === 0xC0) len = 2;
+            else if ((byte & 0xF0) === 0xE0) len = 3;
+            else if ((byte & 0xF8) === 0xF0) len = 4;
+            
+            if (i + len > bytes.length) len = bytes.length - i;
+            
+            let chunk = bytes.subarray(i, i + len);
+            let charStr = decoder.decode(chunk);
+            
+            let prob = 1.0;
+            for (let j = 0; j < len; j++) {
+                if (i + j < probs.length) {
+                    let p = probs[i + j];
+                    if (p !== undefined) prob *= p;
+                } else {
+                    prob = undefined;
+                    break;
+                }
+            }
+            
+            spans.push(<span key={i} style={{backgroundColor: getHighlightColor(prob)}}>{charStr}</span>);
+            i += len;
+        }
+        
+        if (text.endsWith('\n')) spans.push(<br key="br" />);
+        return spans;
+    };
 
-    const renderAttentionText = (pos, stats, layer, head, textVal, isRaw) => {
+    const renderAttentionText = (pos, stats, layer, head, isRaw) => {
         if (!stats || pos <= 0) return null;
         let offset = layer * 8 * 4096 + head * 4096;
+        let bytes = targetBytesRef.current.subarray(0, pos);
         
-        let textUpto = textVal.substring(0, pos);
         let rawDots = new Float32Array(pos);
         let maxRaw = -Infinity;
         for (let i = 0; i < pos; i++) {
@@ -322,23 +396,48 @@ const ByteGPTApp = () => {
             if (probs[i] > maxProb) maxProb = probs[i];
         }
         
-        return textUpto.split('').map((c, i) => {
-            let val = isRaw ? rawDots[i] : probs[i];
+        let spans = [];
+        let i = 0;
+        let decoder = new TextDecoder('utf-8', { fatal: false });
+        
+        while (i < bytes.length) {
+            let byte = bytes[i];
+            let len = 1;
+            if ((byte & 0x80) === 0) len = 1;
+            else if ((byte & 0xE0) === 0xC0) len = 2;
+            else if ((byte & 0xF0) === 0xE0) len = 3;
+            else if ((byte & 0xF8) === 0xF0) len = 4;
+            
+            if (i + len > bytes.length) len = bytes.length - i;
+            
+            let chunk = bytes.subarray(i, i + len);
+            let charStr = decoder.decode(chunk);
+            
+            let charMaxProb = 0;
+            let charMaxRaw = -Infinity;
+            for (let j = 0; j < len; j++) {
+                if (probs[i + j] > charMaxProb) charMaxProb = probs[i + j];
+                if (rawDots[i + j] > charMaxRaw) charMaxRaw = rawDots[i + j];
+            }
+            
+            let val = isRaw ? charMaxRaw : charMaxProb;
             let titleText = isRaw ? val.toFixed(4) : (val * 100).toFixed(2) + '%';
-            let norm = maxProb > 1e-6 ? probs[i] / maxProb : 0;
+            let norm = maxProb > 1e-6 ? charMaxProb / maxProb : 0;
             let r = Math.round(255 * (1 - norm));
             let g = Math.round(255 * norm);
-            return (
+            
+            spans.push(
                 <span key={i} 
-                      title={titleText} 
                       style={{ color: `rgb(${r}, ${g}, 0)`, cursor: 'crosshair' }}
-                      onMouseEnter={() => setHoveredAttn({ char: c, val: titleText })}
+                      onMouseEnter={() => setHoveredAttn({ char: charStr, val: titleText })}
                       onMouseLeave={() => setHoveredAttn(null)}
                 >
-                    {c}
+                    {charStr}
                 </span>
             );
-        });
+            i += len;
+        }
+        return spans;
     };
 
     if (!ready) {
@@ -391,10 +490,7 @@ const ByteGPTApp = () => {
                             color: 'black'
                         }}
                     >
-                        {text.split('').map((c, i) => (
-                            <span key={i} style={{backgroundColor: getHighlightColor(engineRef.current.probs[i])}}>{c}</span>
-                        ))}
-                        {text.endsWith('\n') ? <br /> : null}
+                        {renderHighlights()}
                     </div>
                     <textarea 
                         className="absolute top-0 left-0 w-full h-full bg-transparent resize-none outline-none overflow-y-auto"
@@ -416,8 +512,9 @@ const ByteGPTApp = () => {
                             if (backdropRef.current) backdropRef.current.scrollTop = e.target.scrollTop;
                         }}
                         onChange={e => {
-                            if (e.target.value.length > 4096) return;
+                            if (new TextEncoder().encode(e.target.value).length > 4096) return;
                             setText(e.target.value);
+                            targetBytesRef.current = new TextEncoder().encode(e.target.value);
                             engineRef.current.lastTypeTime = Date.now();
                             setIsInferring(false);
                         }}
@@ -441,7 +538,7 @@ const ByteGPTApp = () => {
                                 <h3 className="font-bold mb-2">Logits for Next Token</h3>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                     {getTopLogitsInfo(inspectData.logits, showRaw).map((x, i) => {
-                                        const actualNextChar = text.charCodeAt(inspectData.pos) & 255;
+                                        const actualNextChar = targetBytesRef.current[inspectData.pos] || 256;
                                         return (
                                         <div key={i} className={`flex justify-between border-b border-gray-100 ${x.idx === actualNextChar ? 'bg-yellow-200 text-black px-1 font-bold rounded' : ''}`}>
                                             <span>'{x.char}'</span>
@@ -463,7 +560,7 @@ const ByteGPTApp = () => {
                                     )}
                                 </div>
                                 <div className="whitespace-pre-wrap break-words bg-gray-900 p-3 rounded leading-relaxed text-base shadow-inner min-h-[100px]" onMouseLeave={() => setHoveredAttn(null)}>
-                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, text, showRaw)}
+                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, showRaw)}
                                 </div>
                             </div>
                         </>
