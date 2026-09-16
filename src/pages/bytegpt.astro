@@ -1,0 +1,22 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ByteGPTApp from '../components/ByteGPT.tsx';
+---
+
+<Layout title="ByteGPT Inference Engine">
+  <script is:inline>
+    window.Module = {
+      locateFile: function(path, prefix) {
+        if (path === 'infer.wasm') return '/granty29/2026/bytegpt/infer.wasm';
+        return prefix + path;
+      },
+      onRuntimeInitialized: function() {
+        window.dispatchEvent(new CustomEvent('wasmLoaded'));
+      }
+    };
+  </script>
+  <script is:inline src="/granty29/2026/bytegpt/infer.js"></script>
+
+  <h1 class="text-3xl font-bold mb-4 font-mono">ByteGPT</h1>
+  <ByteGPTApp client:only="react" />
+</Layout>
