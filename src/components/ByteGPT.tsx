@@ -58,6 +58,9 @@ const ByteGPTApp = () => {
     const [inspectData, setInspectData] = useState(null);
     const [layer, setLayer] = useState(0);
     const [head, setHead] = useState(0);
+    const [showRaw, setShowRaw] = useState(false);
+    
+    const backdropRef = useRef(null);
     
     const engineRef = useRef({
         text: "",
@@ -179,8 +182,9 @@ const ByteGPTApp = () => {
                         let maxLogit = -Infinity;
                         for(let i=0; i<256; i++) if(logits[i] > maxLogit) maxLogit = logits[i];
                         let sum = 0;
-                        for(let i=0; i<256; i++) sum += Math.exp(logits[i] - maxLogit);
-                        prob = Math.exp(logits[nextByte] - maxLogit) / sum;
+                        let t = tempRef.current || 1.0;
+                        for(let i=0; i<256; i++) sum += Math.exp((logits[i] - maxLogit) / t);
+                        prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
                     }
                     
                     state.probs.push(prob);
@@ -269,7 +273,7 @@ const ByteGPTApp = () => {
         }
     };
 
-    const getTopLogitsInfo = (logitsArray) => {
+    const getTopLogitsInfo = (logitsArray, isRaw) => {
         let t = temp || 1.0;
         let maxL = -Infinity;
         for(let i=0; i<256; i++) if(logitsArray[i] > maxL) maxL = logitsArray[i];
@@ -286,28 +290,54 @@ const ByteGPTApp = () => {
             else if (i === 13) char = '\\r';
             else if (i === 9) char = '\\t';
             else if (i < 32 || i > 126) char = `\\x${i.toString(16).padStart(2, '0')}`;
-            items.push({ char, prob: probs[i]/sum });
+            items.push({ char, val: isRaw ? logitsArray[i] : probs[i]/sum, idx: i });
         }
-        items.sort((a, b) => b.prob - a.prob);
+        items.sort((a, b) => b.val - a.val);
         return items.slice(0, 10);
     };
 
-    const renderAttentionText = (pos, stats, layer, head, textVal) => {
+    const [hoveredAttn, setHoveredAttn] = useState(null);
+
+    const renderAttentionText = (pos, stats, layer, head, textVal, isRaw) => {
         if (!stats || pos <= 0) return null;
         let offset = layer * 8 * 4096 + head * 4096;
         
         let textUpto = textVal.substring(0, pos);
-        let maxScore = 0;
+        let rawDots = new Float32Array(pos);
+        let maxRaw = -Infinity;
         for (let i = 0; i < pos; i++) {
-            if (stats[offset + i] > maxScore) maxScore = stats[offset + i];
+            rawDots[i] = stats[offset + i];
+            if (rawDots[i] > maxRaw) maxRaw = rawDots[i];
+        }
+        
+        let probs = new Float32Array(pos);
+        let sum = 0;
+        for (let i = 0; i < pos; i++) {
+            probs[i] = Math.exp(rawDots[i] - maxRaw);
+            sum += probs[i];
+        }
+        let maxProb = 0;
+        for (let i = 0; i < pos; i++) {
+            probs[i] /= sum;
+            if (probs[i] > maxProb) maxProb = probs[i];
         }
         
         return textUpto.split('').map((c, i) => {
-            let score = stats[offset + i];
-            let norm = maxScore > 1e-6 ? score / maxScore : 0;
+            let val = isRaw ? rawDots[i] : probs[i];
+            let titleText = isRaw ? val.toFixed(4) : (val * 100).toFixed(2) + '%';
+            let norm = maxProb > 1e-6 ? probs[i] / maxProb : 0;
             let r = Math.round(255 * (1 - norm));
             let g = Math.round(255 * norm);
-            return <span key={i} style={{ color: `rgb(${r}, ${g}, 0)` }}>{c}</span>;
+            return (
+                <span key={i} 
+                      title={titleText} 
+                      style={{ color: `rgb(${r}, ${g}, 0)`, cursor: 'crosshair' }}
+                      onMouseEnter={() => setHoveredAttn({ char: c, val: titleText })}
+                      onMouseLeave={() => setHoveredAttn(null)}
+                >
+                    {c}
+                </span>
+            );
         });
     };
 
@@ -318,15 +348,21 @@ const ByteGPTApp = () => {
     return (
         <div className="flex flex-col gap-4 h-[80vh] overflow-hidden bg-white text-black text-sm">
             <div className="flex gap-4 items-center bg-gray-100 p-2 rounded border border-gray-300">
-                <div>
-                    <label className="mr-2">Temp:</label>
-                    <input type="number" step="0.1" className="w-16 border rounded px-1" value={temp} onChange={e => setTemp(parseFloat(e.target.value))} />
+                <div className="flex items-center gap-2">
+                    <label className="mr-1">Temp: {temp.toFixed(2)}</label>
+                    <input type="range" min="0" max="2" step="0.05" className="w-24 align-middle" value={temp} onChange={e => setTemp(parseFloat(e.target.value))} />
                 </div>
                 <div>
                     <label className="mr-2">Top K:</label>
                     <input type="number" className="w-16 border rounded px-1" value={topK} onChange={e => setTopK(parseInt(e.target.value))} />
                 </div>
-                <div className="text-gray-700">Tok/s: {stats.tokPerSec.toFixed(1)}</div>
+                <div>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" checked={showRaw} onChange={e => setShowRaw(e.target.checked)} />
+                        Show Raw
+                    </label>
+                </div>
+                <div className="text-gray-700 ml-2">Tok/s: {stats.tokPerSec.toFixed(1)}</div>
                 <div className="text-gray-700">Perplexity: {stats.perplexity.toFixed(2)}</div>
                 <button 
                     className={`px-3 py-1 text-white rounded ml-auto ${isInferring ? 'bg-red-500' : 'bg-blue-500 hover:bg-blue-600'}`}
@@ -338,16 +374,47 @@ const ByteGPTApp = () => {
             
             <div className="flex flex-1 gap-4 min-h-0">
                 {/* Left Pane */}
-                <div className="w-1/2 relative border border-gray-300 rounded overflow-hidden">
-                    <div className="absolute inset-0 whitespace-pre-wrap break-words p-2 pointer-events-none select-none text-black font-mono">
+                <div className="w-1/2 relative border border-gray-300 rounded bg-white overflow-hidden">
+                    <div 
+                        ref={backdropRef}
+                        className="absolute top-0 left-0 w-full h-full overflow-y-auto pointer-events-none select-none"
+                        style={{
+                            fontFamily: 'monospace',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            padding: '12px',
+                            margin: 0,
+                            border: 'none',
+                            boxSizing: 'border-box',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            color: 'black'
+                        }}
+                    >
                         {text.split('').map((c, i) => (
                             <span key={i} style={{backgroundColor: getHighlightColor(engineRef.current.probs[i])}}>{c}</span>
                         ))}
+                        {text.endsWith('\n') ? <br /> : null}
                     </div>
                     <textarea 
-                        className="absolute inset-0 w-full h-full p-2 bg-transparent resize-none outline-none whitespace-pre-wrap break-words font-mono"
-                        style={{ color: 'transparent', caretColor: 'black' }}
+                        className="absolute top-0 left-0 w-full h-full bg-transparent resize-none outline-none overflow-y-auto"
+                        style={{
+                            fontFamily: 'monospace',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            padding: '12px',
+                            margin: 0,
+                            border: 'none',
+                            boxSizing: 'border-box',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            color: 'transparent',
+                            caretColor: 'black'
+                        }}
                         value={text}
+                        onScroll={(e) => {
+                            if (backdropRef.current) backdropRef.current.scrollTop = e.target.scrollTop;
+                        }}
                         onChange={e => {
                             if (e.target.value.length > 4096) return;
                             setText(e.target.value);
@@ -373,19 +440,30 @@ const ByteGPTApp = () => {
                             <div>
                                 <h3 className="font-bold mb-2">Logits for Next Token</h3>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                    {getTopLogitsInfo(inspectData.logits).map((x, i) => (
-                                        <div key={i} className="flex justify-between border-b border-gray-100">
+                                    {getTopLogitsInfo(inspectData.logits, showRaw).map((x, i) => {
+                                        const actualNextChar = text.charCodeAt(inspectData.pos) & 255;
+                                        return (
+                                        <div key={i} className={`flex justify-between border-b border-gray-100 ${x.idx === actualNextChar ? 'bg-yellow-200 text-black px-1 font-bold rounded' : ''}`}>
                                             <span>'{x.char}'</span>
-                                            <span className="text-gray-500">{(x.prob*100).toFixed(1)}%</span>
+                                            <span className="text-gray-500">{showRaw ? x.val.toFixed(4) : (x.val*100).toFixed(1) + '%'}</span>
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             </div>
                             <div className="mt-4">
                                 <h3 className="font-bold mb-1">Attention Scores (L{layer}, H{head})</h3>
-                                <div className="text-xs text-gray-500 mb-2">Use Arrow Keys to change layer/head while focused here</div>
-                                <div className="whitespace-pre-wrap break-words bg-gray-900 p-3 rounded leading-relaxed text-base shadow-inner min-h-[100px]">
-                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, text)}
+                                <div className="text-xs text-gray-500 mb-1">
+                                    Use Arrow Keys to change layer/head while focused here
+                                </div>
+                                <div className="h-6 mb-2">
+                                    {hoveredAttn && (
+                                        <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                            '{hoveredAttn.char === '\n' ? '\\n' : hoveredAttn.char}': {hoveredAttn.val}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="whitespace-pre-wrap break-words bg-gray-900 p-3 rounded leading-relaxed text-base shadow-inner min-h-[100px]" onMouseLeave={() => setHoveredAttn(null)}>
+                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, text, showRaw)}
                                 </div>
                             </div>
                         </>
