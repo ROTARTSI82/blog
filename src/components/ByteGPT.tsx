@@ -1,5 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 
+/**
+ ### 1. Scaling vs Softmax Percentages (isRaw = false)
+
+  • If Scale by ||V|| is OFF: We show the traditional Softmax Percentage (the standard attention weight). They sum perfectly to 100%.
+  • If Scale by ||V|| is ON: Showing a "softmax percentage" of a scaled vector doesn't make sense since softmax * ||V|| is a magnitude. The percentage now represents the
+  fraction of the total vector magnitude that a token contributed to the current attention head output. This is mathematically meaningful—it measures how "loud" the token's
+  signal is relative to the total "noise + signal" added into the accumulator. This gracefully sums to 100%.
+
+  ### 2. Raw vs Scaled Values (isRaw = true)
+
+  • If Scale by ||V|| is OFF: We show the true Pre-Softmax dot product scores (QK^T / sqrt(d)). These can be negative and unbounded.
+  • If Scale by ||V|| is ON: We show the Scaled Magnitude (softmax_weight * ||V||). This is always a positive number and directly represents the L2 length of the value vector
+  after it was dampened by the attention mechanism.
+*/
+
 function sampleLogits(logits, temp, topK) {
     if (temp <= 0) {
         let maxI = 0;
@@ -48,7 +63,22 @@ function getHighlightColor(prob) {
 
 const ByteGPTApp = () => {
     const [ready, setReady] = useState(false);
-    const [text, setText] = useState("rotartsi 2026-04-03 13:44:55\nand so you get this proof of cantor's theorem\nrohan what do you think?\n\nchopinfan239 2026-04-03 13:45:06\nyou diagonalize? like");
+    const [text, setText] = useState(`float Q_rsqrt( float number )
+{
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}`);
     const [temp, setTemp] = useState(0.8);
     const [topK, setTopK] = useState(40);
     const [stats, setStats] = useState({ tokPerSec: 0, perplexity: 0 });
@@ -60,6 +90,7 @@ const ByteGPTApp = () => {
     const [head, setHead] = useState(0);
     const [showRaw, setShowRaw] = useState(false);
     const [hoveredAttn, setHoveredAttn] = useState(null);
+    const [scaleByVNorm, setScaleByVNorm] = useState(false);
     
     const backdropRef = useRef(null);
     
@@ -80,6 +111,7 @@ const ByteGPTApp = () => {
     const topKRef = useRef(topK);
     const inspectStrPosRef = useRef(cursorPos);
     const isInferringRef = useRef(isInferring);
+    const scaleByVNormRef = useRef(scaleByVNorm);
     
     const [renderTick, setRenderTick] = useState(0);
 
@@ -93,7 +125,8 @@ const ByteGPTApp = () => {
         topKRef.current = topK;
         inspectStrPosRef.current = cursorPos;
         isInferringRef.current = isInferring;
-    }, [temp, topK, cursorPos, isInferring]);
+        scaleByVNormRef.current = scaleByVNorm;
+    }, [temp, topK, cursorPos, isInferring, scaleByVNorm]);
 
     useEffect(() => {
         const init = async () => {
@@ -265,8 +298,14 @@ const ByteGPTApp = () => {
                     let statsPtr = window.Module.ccall('get_stats', 'number', [], []);
                     let statsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, statsPtr, 24 * 8 * 4096));
                     
-                    let vNormsPtr = statsPtr + 24 * 8 * 4096 * 4;
-                    let vNormsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, vNormsPtr, 24 * 8 * 4096));
+                    // We also assume the user will add value_norms right after attn_scores in InterpStats.
+                    // size of attn_scores = 24 * 8 * 4096 = 786432 floats.
+                    let vNormsPtr = statsPtr + 786432 * 4;
+                    // For now we don't crash if it's out of bounds, we just try to read it.
+                    let vNormsCopy = null;
+                    if (scaleByVNormRef.current) {
+                        vNormsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, vNormsPtr, 24 * 8 * 4096));
+                    }
                     
                     setInspectData({ logits: logitsCopy, stats: statsCopy, vNorms: vNormsCopy, pos: bytePos });
                 } else {
@@ -394,23 +433,42 @@ const ByteGPTApp = () => {
             sum += probs[i];
         }
         
-        let maxProb = 0;
+        let weights = new Float32Array(contextLen);
+        let weightSum = 0;
         for (let i = 0; i < contextLen; i++) {
-            probs[i] /= sum;
-            probs[i] *= vNorms[offset + i];
-            if (probs[i] > maxProb) maxProb = probs[i];
+            let p = probs[i] / sum;
+            weights[i] = vNorms ? p * vNorms[offset + i] : p;
+            weightSum += weights[i];
+        }
+        
+        let maxWeight = 0;
+        for (let i = 0; i < contextLen; i++) {
+            if (weights[i] > maxWeight) maxWeight = weights[i];
         }
         
         let spans = [];
-        let renderSpan = (charStr, charMaxProb, charMaxRaw, keyIdx) => {
-            let val = isRaw ? charMaxRaw : charMaxProb;
-            let titleText = isRaw ? val.toFixed(4) : (val * 100).toFixed(2) + '%';
-            let norm = maxProb > 1e-6 ? charMaxProb / maxProb : 0;
-            let r = Math.round(255 * (1 - norm));
-            let g = Math.round(255 * norm);
+        let renderSpan = (charStr, charMaxWeight, charMaxRaw, keyIdx) => {
+            let titleText;
+            
+            if (isRaw) {
+                if (vNorms) {
+                    titleText = charMaxWeight.toFixed(4) + ' (Scaled Mag)';
+                } else {
+                    titleText = charMaxRaw.toFixed(4) + ' (Pre-Softmax)';
+                }
+            } else {
+                let frac = weightSum > 1e-9 ? charMaxWeight / weightSum : 0;
+                titleText = (frac * 100).toFixed(2) + '%';
+            }
+            
+            let norm = maxWeight > 1e-9 ? charMaxWeight / maxWeight : 0;
+            // Map 0 to Gray (128, 128, 128) and 1 to Yellow (255, 255, 0)
+            let r = Math.round(128 + 127 * norm);
+            let g = Math.round(128 + 127 * norm);
+            let b = Math.round(128 * (1 - norm));
             
             let displayStr = charStr;
-            let style = { color: `rgb(${r}, ${g}, 0)`, cursor: 'crosshair' };
+            let style = { color: `rgb(${r}, ${g}, ${b})`, cursor: 'crosshair' };
             
             if (charStr === '\0') { 
                 displayStr = '∅';
@@ -445,7 +503,7 @@ const ByteGPTApp = () => {
             );
         };
         
-        spans.push(renderSpan('\0', probs[0], rawDots[0], -1));
+        spans.push(renderSpan('\0', weights[0], rawDots[0], -1));
         
         let i = 0;
         let decoder = new TextDecoder('utf-8', { fatal: false });
@@ -463,15 +521,15 @@ const ByteGPTApp = () => {
             let chunk = bytes.subarray(i, i + len);
             let charStr = decoder.decode(chunk);
             
-            let charMaxProb = 0;
+            let charMaxWeight = 0;
             let charMaxRaw = -Infinity;
             for (let j = 0; j < len; j++) {
                 let idx = i + j + 1;
-                if (probs[idx] > charMaxProb) charMaxProb = probs[idx];
+                if (weights[idx] > charMaxWeight) charMaxWeight = weights[idx];
                 if (rawDots[idx] > charMaxRaw) charMaxRaw = rawDots[idx];
             }
             
-            spans.push(renderSpan(charStr, charMaxProb, charMaxRaw, i));
+            spans.push(renderSpan(charStr, charMaxWeight, charMaxRaw, i));
             i += len;
         }
         return spans;
@@ -480,10 +538,6 @@ const ByteGPTApp = () => {
     if (!ready) {
         return <div className="p-4 text-center">Loading WebAssembly Model...</div>;
     }
-
-    const [scaleByVNorm, setScaleByVNorm] = useState(false);
-    
-    // ...
 
     return (
         <div className="flex flex-col gap-4 h-[80vh] overflow-hidden bg-white text-black text-sm">
