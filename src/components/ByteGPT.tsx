@@ -55,30 +55,20 @@ function sampleLogits(logits, temp, topK) {
 
 function getHighlightColor(prob) {
     if (prob === undefined) return 'transparent';
-    let p = Math.max(0, Math.min(1, prob));
-    let surprise = 1 - p;
-    let alpha = Math.pow(surprise, 1.5) * 0.8; 
+    let p = Math.max(1e-9, Math.min(1, prob));
+    let nll = -Math.log(p);
+    // Proportion to -log(p). Map roughly 0-6 nll to 0-0.9 alpha.
+    let alpha = Math.min(0.9, nll * 0.15); 
     return `rgba(255, 120, 0, ${alpha})`;
 }
 
 const ByteGPTApp = () => {
     const [ready, setReady] = useState(false);
-    const [text, setText] = useState(`float Q_rsqrt( float number )
+    const [text, setText] = useState(`float Q_rsqrt(float number)
 {
 	long i;
 	float x2, y;
-	const float threehalfs = 1.5F;
-
-	x2 = number * 0.5F;
-	y  = number;
-	i  = * ( long * ) &y;                       // evil floating point bit level hacking
-	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-	y  = * ( float * ) &i;
-	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-	return y;
-}`);
+	const float threehalfs = 1.5F;`);
     const [temp, setTemp] = useState(0.8);
     const [topK, setTopK] = useState(40);
     const [stats, setStats] = useState({ tokPerSec: 0, perplexity: 0 });
@@ -222,17 +212,15 @@ const ByteGPTApp = () => {
                 let nextByte = targetBytes[state.bytes.length];
                 let prob = 1.0;
                 
-                if (state.bytes.length > 0) {
-                    let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
-                    let logits = new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256);
-                    
-                    let maxLogit = -Infinity;
-                    for(let i=0; i<256; i++) if(logits[i] > maxLogit) maxLogit = logits[i];
-                    let sum = 0;
-                    let t = tempRef.current || 1.0;
-                    for(let i=0; i<256; i++) sum += Math.exp((logits[i] - maxLogit) / t);
-                    prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
-                }
+                let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
+                let logits = new Float32Array(window.Module.HEAPF32.buffer, logitsPtr, 256);
+                
+                let maxLogit = -Infinity;
+                for(let i=0; i<256; i++) if(logits[i] > maxLogit) maxLogit = logits[i];
+                let sum = 0;
+                let t = tempRef.current || 1.0;
+                for(let i=0; i<256; i++) sum += Math.exp((logits[i] - maxLogit) / t);
+                prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
                 
                 state.probs.push(prob);
                 if (prob > 0) state.totalNLL -= Math.log(prob);
@@ -288,7 +276,8 @@ const ByteGPTApp = () => {
                         window.Module.ccall('seek', 'number', ['number'], [bytePos]);
                         window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[bytePos - 1]]);
                     } else {
-                        window.Module.ccall('seek', 'number', ['number'], [1]);
+                        window.Module.ccall('seek', 'number', ['number'], [0]);
+                        window.Module.ccall('predict_next', 'number', ['number'], [0]);
                     }
                     state.engineCursor = bytePos;
                     
