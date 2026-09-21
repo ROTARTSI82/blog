@@ -8,6 +8,8 @@ import Layout from "../../layouts/Layout.astro";
 import { calcBlogIndex, BlogIndex, link } from "../../blog-util";
 import { CommentSection } from "../../firebase-util";
 
+import tikzjaxUrl from "../../assets/tikzjax.js?url";
+
 interface MDProps {
   post: any;
   leaf: string;
@@ -48,7 +50,7 @@ const date = post.data?.created?.toLocaleString(undefined, opt);
   <link slot="in-head" rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
   <!--<script slot="in-head" src="https://tikzjax.com/v1/tikzjax.js" />-->
   <!--<script slot="in-head" src={link("/preprocess-tikz.js")}/>-->
-  <script is:inline fetchpriority="low" async slot="in-head" src={link("/tikzjax.js")}/>
+  <script is:inline fetchpriority="low" async slot="in-head" src={tikzjaxUrl}/>
 
   <code>{leaf === '1' ? 0 : Object.keys(post).length} {slug}{leaf == '0' ? '/' : ''}</code>
   {leaf === '1' ? <>

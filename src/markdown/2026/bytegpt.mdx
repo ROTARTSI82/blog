@@ -1,0 +1,16 @@
+---
+title: 'byte gpt: byte-level transformer'
+subhead: 'training a 20M toy model on linux kernel source code'
+created: 'Sep 21 2026'
+tags: 'featured'
+---
+
+Architectural details:
+- RoPE.
+- Pre-RMS norm.
+- $n=24$ layers.
+- $d_\text{model} = 256$.
+- $h=8$ attention heads, with $d_k = d_v = 32$.
+- SiLU activation with hidden layer dimension $d_\text{ff} = 768$.
+- Weight-tied embedding/unembedding ($256 \times 256$ matrix).
+

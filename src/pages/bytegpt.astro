@@ -1,13 +1,17 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ByteGPTApp from '../components/ByteGPT.tsx';
+import ByteGPTApp from '../components/2026/ByteGPT.tsx';
+
+import inferWasmUrl from '../assets/2026/bytegpt/infer.wasm?url';
+import inferJsUrl from '../assets/2026/bytegpt/infer.js?url';
+import modelBinUrl from '../assets/2026/bytegpt/model_linux.bin?url';
 ---
 
 <Layout title="ByteGPT Inference Engine">
-  <script is:inline>
+  <script is:inline define:vars={{ inferWasmUrl }}>
     window.Module = {
       locateFile: function(path, prefix) {
-        if (path === 'infer.wasm') return '/granty29/2026/bytegpt/infer.wasm';
+        if (path === 'infer.wasm') return inferWasmUrl;
         return prefix + path;
       },
       onRuntimeInitialized: function() {
@@ -15,8 +19,8 @@ import ByteGPTApp from '../components/ByteGPT.tsx';
       }
     };
   </script>
-  <script is:inline src="/granty29/2026/bytegpt/infer.js"></script>
+  <script is:inline src={inferJsUrl}></script>
 
   <h1 class="text-3xl font-bold mb-4 font-mono">ByteGPT</h1>
-  <ByteGPTApp client:only="react" />
+  <ByteGPTApp client:only="react" modelUrl={modelBinUrl} />
 </Layout>
