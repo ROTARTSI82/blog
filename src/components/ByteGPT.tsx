@@ -71,7 +71,8 @@ const ByteGPTApp = () => {
         totalNLL: 0,
         startTime: Date.now(),
         tokCount: 0,
-        lastInspectPos: -1
+        lastInspectPos: -1,
+        hasInitSink: false
     });
     
     const targetBytesRef = useRef(new Uint8Array(0));
@@ -108,7 +109,7 @@ const ByteGPTApp = () => {
         const loadModel = async () => {
             try {
                 if (!window.Module._malloc) return;
-                const response = await fetch('/granty29/2026/bytegpt/rawmodel.bin');
+                const response = await fetch('/granty29/2026/bytegpt/model_linux.bin');
                 const buffer = await response.arrayBuffer();
                 const bytes = new Uint8Array(buffer);
                 const weightsPtr = window.Module._malloc(bytes.length);
@@ -137,6 +138,13 @@ const ByteGPTApp = () => {
             
             let changed = false;
             
+            if (!state.hasInitSink) {
+                window.Module.ccall('seek', 'number', ['number'], [0]);
+                window.Module.ccall('predict_next', 'number', ['number'], [0]);
+                state.hasInitSink = true;
+                changed = true;
+            }
+            
             let diffIdx = 0;
             while (diffIdx < targetBytes.length && diffIdx < state.bytes.length && targetBytes[diffIdx] === state.bytes[diffIdx]) {
                 diffIdx++;
@@ -151,10 +159,11 @@ const ByteGPTApp = () => {
                 state.probs = state.probs.slice(0, diffIdx);
                 
                 if (diffIdx > 0) {
-                    window.Module.ccall('seek', 'number', ['number'], [diffIdx - 1]);
+                    window.Module.ccall('seek', 'number', ['number'], [diffIdx]);
                     window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[diffIdx - 1]]);
                 } else {
                     window.Module.ccall('seek', 'number', ['number'], [0]);
+                    window.Module.ccall('predict_next', 'number', ['number'], [0]);
                 }
                 state.engineCursor = diffIdx;
                 
@@ -169,10 +178,10 @@ const ByteGPTApp = () => {
             while (state.bytes.length < targetBytes.length && charsProcessed < 5) {
                 if (state.engineCursor !== state.bytes.length) {
                     if (state.bytes.length > 0) {
-                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length - 1]);
+                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length]);
                         window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[state.bytes.length - 1]]);
                     } else {
-                        window.Module.ccall('seek', 'number', ['number'], [0]);
+                        window.Module.ccall('seek', 'number', ['number'], [1]);
                     }
                     state.engineCursor = state.bytes.length;
                 }
@@ -211,10 +220,10 @@ const ByteGPTApp = () => {
             if (isInferringRef.current && targetBytes.length < 4096 && state.bytes.length === targetBytes.length) {
                 if (state.engineCursor !== state.bytes.length) {
                     if (state.bytes.length > 0) {
-                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length - 1]);
+                        window.Module.ccall('seek', 'number', ['number'], [state.bytes.length]);
                         window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[state.bytes.length - 1]]);
                     } else {
-                        window.Module.ccall('seek', 'number', ['number'], [0]);
+                        window.Module.ccall('seek', 'number', ['number'], [1]);
                     }
                     state.engineCursor = state.bytes.length;
                 }
@@ -255,9 +264,13 @@ const ByteGPTApp = () => {
             if (state.bytes.length === targetBytes.length && bytePos !== state.lastInspectPos) {
                 state.lastInspectPos = bytePos;
                 
-                if (bytePos > 0 && bytePos <= state.bytes.length) {
-                    window.Module.ccall('seek', 'number', ['number'], [bytePos - 1]);
-                    window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[bytePos - 1]]);
+                if (bytePos >= 0 && bytePos <= state.bytes.length) {
+                    if (bytePos > 0) {
+                        window.Module.ccall('seek', 'number', ['number'], [bytePos]);
+                        window.Module.ccall('predict_next', 'number', ['number'], [targetBytes[bytePos - 1]]);
+                    } else {
+                        window.Module.ccall('seek', 'number', ['number'], [1]);
+                    }
                     state.engineCursor = bytePos;
                     
                     let logitsPtr = window.Module.ccall('get_logits', 'number', [], []);
@@ -373,30 +386,76 @@ const ByteGPTApp = () => {
     };
 
     const renderAttentionText = (pos, stats, layer, head, isRaw) => {
-        if (!stats || pos <= 0) return null;
+        if (!stats || pos < 0) return null;
         let offset = layer * 8 * 4096 + head * 4096;
         let bytes = targetBytesRef.current.subarray(0, pos);
         
-        let rawDots = new Float32Array(pos);
+        let contextLen = pos + 1;
+        let rawDots = new Float32Array(contextLen);
         let maxRaw = -Infinity;
-        for (let i = 0; i < pos; i++) {
+        for (let i = 0; i < contextLen; i++) {
             rawDots[i] = stats[offset + i];
             if (rawDots[i] > maxRaw) maxRaw = rawDots[i];
         }
         
-        let probs = new Float32Array(pos);
+        let probs = new Float32Array(contextLen);
         let sum = 0;
-        for (let i = 0; i < pos; i++) {
+        for (let i = 0; i < contextLen; i++) {
             probs[i] = Math.exp(rawDots[i] - maxRaw);
             sum += probs[i];
         }
         let maxProb = 0;
-        for (let i = 0; i < pos; i++) {
+        for (let i = 0; i < contextLen; i++) {
             probs[i] /= sum;
             if (probs[i] > maxProb) maxProb = probs[i];
         }
         
         let spans = [];
+        let renderSpan = (charStr, charMaxProb, charMaxRaw, keyIdx) => {
+            let val = isRaw ? charMaxRaw : charMaxProb;
+            let titleText = isRaw ? val.toFixed(4) : (val * 100).toFixed(2) + '%';
+            let norm = maxProb > 1e-6 ? charMaxProb / maxProb : 0;
+            let r = Math.round(255 * (1 - norm));
+            let g = Math.round(255 * norm);
+            
+            let displayStr = charStr;
+            let style = { color: `rgb(${r}, ${g}, 0)`, cursor: 'crosshair' };
+            
+            if (charStr === '\0') { 
+                displayStr = '∅';
+                style.border = '1px solid rgba(255,255,255,0.3)';
+                style.borderRadius = '2px';
+                style.padding = '0 2px';
+                style.margin = '0 1px';
+                style.backgroundColor = 'rgba(255,255,255,0.1)';
+            } else if (charStr === ' ') {
+                displayStr = ' ';
+                style.borderBottom = '1px solid rgba(255,255,255,0.4)';
+                style.backgroundColor = 'rgba(255,255,255,0.05)';
+            } else if (charStr === '\n') {
+                displayStr = '↵\n';
+                style.opacity = 0.8;
+            } else if (charStr === '\t') {
+                displayStr = '→';
+            } else if (charStr === '\r') {
+                displayStr = '←';
+            } else if (charStr.length === 1 && charStr.charCodeAt(0) < 32) {
+                displayStr = '';
+            }
+            
+            return (
+                <span key={keyIdx} 
+                      style={style}
+                      onMouseEnter={() => setHoveredAttn({ char: charStr === '\0' ? '[NULL]' : charStr, val: titleText })}
+                      onMouseLeave={() => setHoveredAttn(null)}
+                >
+                    {displayStr}
+                </span>
+            );
+        };
+        
+        spans.push(renderSpan('\0', probs[0], rawDots[0], -1));
+        
         let i = 0;
         let decoder = new TextDecoder('utf-8', { fatal: false });
         
@@ -416,25 +475,12 @@ const ByteGPTApp = () => {
             let charMaxProb = 0;
             let charMaxRaw = -Infinity;
             for (let j = 0; j < len; j++) {
-                if (probs[i + j] > charMaxProb) charMaxProb = probs[i + j];
-                if (rawDots[i + j] > charMaxRaw) charMaxRaw = rawDots[i + j];
+                let idx = i + j + 1;
+                if (probs[idx] > charMaxProb) charMaxProb = probs[idx];
+                if (rawDots[idx] > charMaxRaw) charMaxRaw = rawDots[idx];
             }
             
-            let val = isRaw ? charMaxRaw : charMaxProb;
-            let titleText = isRaw ? val.toFixed(4) : (val * 100).toFixed(2) + '%';
-            let norm = maxProb > 1e-6 ? charMaxProb / maxProb : 0;
-            let r = Math.round(255 * (1 - norm));
-            let g = Math.round(255 * norm);
-            
-            spans.push(
-                <span key={i} 
-                      style={{ color: `rgb(${r}, ${g}, 0)`, cursor: 'crosshair' }}
-                      onMouseEnter={() => setHoveredAttn({ char: charStr, val: titleText })}
-                      onMouseLeave={() => setHoveredAttn(null)}
-                >
-                    {charStr}
-                </span>
-            );
+            spans.push(renderSpan(charStr, charMaxProb, charMaxRaw, i));
             i += len;
         }
         return spans;
