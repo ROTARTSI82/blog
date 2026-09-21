@@ -244,20 +244,6 @@ const ByteGPTApp = () => {
                 state.lastTypeTime = Date.now();
             }
             
-            // Map string cursor position to byte cursor position
-            // Since we may have typed into the textarea or inferred, we use current targetBytesRef
-            // The cursor is at `inspectStrPosRef.current` characters into the string.
-            // We need to encode the substring up to that point.
-            // But wait! If targetText was just decoded from targetBytes, we can just encode text.substring(0, inspectStrPosRef)
-            // But wait! React state `text` might lag behind `targetBytesRef` by a few ms, but that's fine.
-            
-            // We can just use the React state `text`? No, we don't have access to the fresh `text` state here if it wasn't captured.
-            // Actually, we can get `text` from a ref if we added one, but we didn't add textRef in the deps this time.
-            // Wait, we DO have textRef (wait, I removed textRef?). Let's add textRef back for this!
-            
-            // Wait, I will just let the loop run. Let's finish the script.
-            // Wait, I will just use the DOM! Actually `textRef` is still declared in the full file!
-            // I will use textRef.current to get the current string.
             let textToCursor = textRef.current.substring(0, inspectStrPosRef.current);
             let bytePos = new TextEncoder().encode(textToCursor).length;
             
@@ -279,7 +265,10 @@ const ByteGPTApp = () => {
                     let statsPtr = window.Module.ccall('get_stats', 'number', [], []);
                     let statsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, statsPtr, 24 * 8 * 4096));
                     
-                    setInspectData({ logits: logitsCopy, stats: statsCopy, pos: bytePos });
+                    let vNormsPtr = statsPtr + 24 * 8 * 4096 * 4;
+                    let vNormsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, vNormsPtr, 24 * 8 * 4096));
+                    
+                    setInspectData({ logits: logitsCopy, stats: statsCopy, vNorms: vNormsCopy, pos: bytePos });
                 } else {
                     setInspectData(null);
                 }
@@ -385,7 +374,7 @@ const ByteGPTApp = () => {
         return spans;
     };
 
-    const renderAttentionText = (pos, stats, layer, head, isRaw) => {
+    const renderAttentionText = (pos, stats, vNorms, layer, head, isRaw) => {
         if (!stats || pos < 0) return null;
         let offset = layer * 8 * 4096 + head * 4096;
         let bytes = targetBytesRef.current.subarray(0, pos);
@@ -404,9 +393,11 @@ const ByteGPTApp = () => {
             probs[i] = Math.exp(rawDots[i] - maxRaw);
             sum += probs[i];
         }
+        
         let maxProb = 0;
         for (let i = 0; i < contextLen; i++) {
             probs[i] /= sum;
+            probs[i] *= vNorms[offset + i];
             if (probs[i] > maxProb) maxProb = probs[i];
         }
         
@@ -490,6 +481,10 @@ const ByteGPTApp = () => {
         return <div className="p-4 text-center">Loading WebAssembly Model...</div>;
     }
 
+    const [scaleByVNorm, setScaleByVNorm] = useState(false);
+    
+    // ...
+
     return (
         <div className="flex flex-col gap-4 h-[80vh] overflow-hidden bg-white text-black text-sm">
             <div className="flex gap-4 items-center bg-gray-100 p-2 rounded border border-gray-300">
@@ -505,6 +500,12 @@ const ByteGPTApp = () => {
                     <label className="flex items-center gap-1 cursor-pointer">
                         <input type="checkbox" checked={showRaw} onChange={e => setShowRaw(e.target.checked)} />
                         Show Raw
+                    </label>
+                </div>
+                <div>
+                    <label className="flex items-center gap-1 cursor-pointer" title="Requires updating C++ InterpStats">
+                        <input type="checkbox" checked={scaleByVNorm} onChange={e => setScaleByVNorm(e.target.checked)} />
+                        Scale by ||V||
                     </label>
                 </div>
                 <div className="text-gray-700 ml-2">Tok/s: {stats.tokPerSec.toFixed(1)}</div>
@@ -606,7 +607,7 @@ const ByteGPTApp = () => {
                                     )}
                                 </div>
                                 <div className="whitespace-pre-wrap break-words bg-gray-900 p-3 rounded leading-relaxed text-base shadow-inner min-h-[100px]" onMouseLeave={() => setHoveredAttn(null)}>
-                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, showRaw)}
+                                    {renderAttentionText(inspectData.pos, inspectData.stats, inspectData.vNorms, layer, head, showRaw)}
                                 </div>
                             </div>
                         </>
