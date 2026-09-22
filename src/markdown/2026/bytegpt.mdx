@@ -14,3 +14,8 @@ Architectural details:
 - SiLU activation with hidden layer dimension $d_\text{ff} = 768$.
 - Weight-tied embedding/unembedding ($256 \times 256$ matrix).
 
+import WeightsVis from '../../components/2026/WeightsVis.tsx';
+import modelBinUrl from '../../assets/2026/bytegpt/model_linux.bin?url';
+
+<WeightsVis client:only="react" modelUrl={modelBinUrl} />
+
