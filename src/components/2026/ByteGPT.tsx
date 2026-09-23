@@ -71,7 +71,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
 	const float threehalfs = 1.5F;`);
     const [temp, setTemp] = useState(0.8);
     const [topK, setTopK] = useState(40);
-    const [stats, setStats] = useState({ tokPerSec: 0, perplexity: 0 });
+    const [stats, setStats] = useState({ tokPerSec: 0, entropy: 0 });
     const [cursorPos, setCursorPos] = useState(0); // string cursor index
     const [isInferring, setIsInferring] = useState(false);
     
@@ -80,7 +80,6 @@ const ByteGPTApp = ({ weightsBuffer }) => {
     const [head, setHead] = useState(0);
     const [showRaw, setShowRaw] = useState(false);
     const [hoveredAttn, setHoveredAttn] = useState(null);
-    const [scaleByVNorm, setScaleByVNorm] = useState(false);
     
     const backdropRef = useRef(null);
     
@@ -101,7 +100,6 @@ const ByteGPTApp = ({ weightsBuffer }) => {
     const topKRef = useRef(topK);
     const inspectStrPosRef = useRef(cursorPos);
     const isInferringRef = useRef(isInferring);
-    const scaleByVNormRef = useRef(scaleByVNorm);
     
     const [renderTick, setRenderTick] = useState(0);
 
@@ -115,8 +113,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
         topKRef.current = topK;
         inspectStrPosRef.current = cursorPos;
         isInferringRef.current = isInferring;
-        scaleByVNormRef.current = scaleByVNorm;
-    }, [temp, topK, cursorPos, isInferring, scaleByVNorm]);
+    }, [temp, topK, cursorPos, isInferring]);
 
     useEffect(() => {
         const init = async () => {
@@ -192,7 +189,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                 
                 state.totalNLL = 0;
                 for(let i = 0; i < state.probs.length; i++) {
-                    if (state.probs[i] > 0) state.totalNLL -= Math.log(state.probs[i]);
+                    if (state.probs[i] > 0) state.totalNLL -= Math.log2(state.probs[i]);
                 }
                 changed = true;
             }
@@ -223,7 +220,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                 prob = Math.exp((logits[nextByte] - maxLogit) / t) / sum;
                 
                 state.probs.push(prob);
-                if (prob > 0) state.totalNLL -= Math.log(prob);
+                if (prob > 0) state.totalNLL -= Math.log2(prob);
                 
                 window.Module.ccall('predict_next', 'number', ['number'], [nextByte]);
                 state.engineCursor++;
@@ -236,6 +233,18 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                 state.tokCount++;
                 charsProcessed++;
                 changed = true;
+                
+                let now = performance.now();
+                if (!state.tokenTimes) {
+                    state.tokenTimes = [];
+                    state.lastComputedTps = 0;
+                }
+                if (state.tokenTimes.length > 0) {
+                    let dtGap = now - state.tokenTimes[state.tokenTimes.length - 1];
+                    if (dtGap > 1000) state.tokenTimes = [];
+                }
+                state.tokenTimes.push(now);
+                if (state.tokenTimes.length > 50) state.tokenTimes.shift();
             }
             
             if (isInferringRef.current && targetBytes.length < 4096 && state.bytes.length === targetBytes.length) {
@@ -286,28 +295,26 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                     
                     let statsPtr = window.Module.ccall('get_stats', 'number', [], []);
                     let statsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, statsPtr, 24 * 8 * 4096));
-                    
-                    // We also assume the user will add value_norms right after attn_scores in InterpStats.
-                    // size of attn_scores = 24 * 8 * 4096 = 786432 floats.
-                    let vNormsPtr = statsPtr + 786432 * 4;
-                    // For now we don't crash if it's out of bounds, we just try to read it.
-                    let vNormsCopy = null;
-                    if (scaleByVNormRef.current) {
-                        vNormsCopy = new Float32Array(new Float32Array(window.Module.HEAPF32.buffer, vNormsPtr, 24 * 8 * 4096));
-                    }
-                    
-                    setInspectData({ logits: logitsCopy, stats: statsCopy, vNorms: vNormsCopy, pos: bytePos });
+                   
+                    setInspectData({ logits: logitsCopy, stats: statsCopy, pos: bytePos });
                 } else {
                     setInspectData(null);
                 }
             }
             
-            if (changed || state.tokCount % 10 === 0) {
+            if (changed) {
                 setRenderTick(t => t + 1);
-                let dt = (Date.now() - state.startTime) / 1000;
+                
+                if (state.tokenTimes && state.tokenTimes.length > 1) {
+                    let dt = (state.tokenTimes[state.tokenTimes.length - 1] - state.tokenTimes[0]) / 1000;
+                    if (dt > 0) {
+                        state.lastComputedTps = (state.tokenTimes.length - 1) / dt;
+                    }
+                }
+                
                 setStats({
-                    tokPerSec: dt > 0 ? (state.tokCount / dt) : 0,
-                    perplexity: state.probs.length > 0 ? Math.exp(state.totalNLL / state.probs.length) : 0
+                    tokPerSec: state.lastComputedTps || 0,
+                    entropy: state.probs.length > 0 ? state.totalNLL / state.probs.length : 0
                 });
             }
             
@@ -326,9 +333,11 @@ const ByteGPTApp = ({ weightsBuffer }) => {
 
     const handleKeyDown = (e) => {
         if (e.key === 'ArrowUp') {
+            setHead(_ => 0);
             setLayer(l => Math.min(23, l + 1));
             e.preventDefault();
         } else if (e.key === 'ArrowDown') {
+            setHead(_ => 0);
             setLayer(l => Math.max(0, l - 1));
             e.preventDefault();
         } else if (e.key === 'ArrowLeft') {
@@ -402,7 +411,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
         return spans;
     };
 
-    const renderAttentionText = (pos, stats, vNorms, layer, head, isRaw) => {
+    const renderAttentionText = (pos, stats, layer, head, isRaw) => {
         if (!stats || pos < 0) return null;
         let offset = layer * 8 * 4096 + head * 4096;
         let bytes = targetBytesRef.current.subarray(0, pos);
@@ -426,7 +435,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
         let weightSum = 0;
         for (let i = 0; i < contextLen; i++) {
             let p = probs[i] / sum;
-            weights[i] = vNorms ? p * vNorms[offset + i] : p;
+            weights[i] = p;
             weightSum += weights[i];
         }
         
@@ -440,11 +449,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
             let titleText;
             
             if (isRaw) {
-                if (vNorms) {
-                    titleText = charMaxWeight.toFixed(4) + ' (Scaled Mag)';
-                } else {
-                    titleText = charMaxRaw.toFixed(4) + ' (Pre-Softmax)';
-                }
+                titleText = charMaxRaw.toFixed(4) + ' (Pre-Softmax)';
             } else {
                 let frac = weightSum > 1e-9 ? charMaxWeight / weightSum : 0;
                 titleText = (frac * 100).toFixed(2) + '%';
@@ -545,14 +550,8 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                         Show Raw
                     </label>
                 </div>
-                <div>
-                    <label className="flex items-center gap-1 cursor-pointer" title="Requires updating C++ InterpStats">
-                        <input type="checkbox" checked={scaleByVNorm} onChange={e => setScaleByVNorm(e.target.checked)} />
-                        Scale by ||V||
-                    </label>
-                </div>
                 <div className="text-gray-700 ml-2">Tok/s: {stats.tokPerSec.toFixed(1)}</div>
-                <div className="text-gray-700">Perplexity: {stats.perplexity.toFixed(2)}</div>
+                <div className="text-gray-700">Avg. Entropy: {stats.entropy.toFixed(2)} bits</div>
                 <button 
                     className={`px-3 py-1 text-white rounded ml-auto ${isInferring ? 'bg-red-500' : 'bg-blue-500 hover:bg-blue-600'}`}
                     onClick={() => setIsInferring(!isInferring)}
@@ -650,7 +649,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                                     )}
                                 </div>
                                 <div className="whitespace-pre-wrap break-words bg-gray-900 p-3 rounded leading-relaxed text-base shadow-inner min-h-[100px]" onMouseLeave={() => setHoveredAttn(null)}>
-                                    {renderAttentionText(inspectData.pos, inspectData.stats, inspectData.vNorms, layer, head, showRaw)}
+                                    {renderAttentionText(inspectData.pos, inspectData.stats, layer, head, showRaw)}
                                 </div>
                             </div>
                         </>
