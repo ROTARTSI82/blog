@@ -62,7 +62,7 @@ function getHighlightColor(prob) {
     return `rgba(255, 120, 0, ${alpha})`;
 }
 
-const ByteGPTApp = ({ modelUrl }) => {
+const ByteGPTApp = ({ weightsBuffer }) => {
     const [ready, setReady] = useState(false);
     const [text, setText] = useState(`float Q_rsqrt(float number)
 {
@@ -132,8 +132,8 @@ const ByteGPTApp = ({ modelUrl }) => {
         const loadModel = async () => {
             try {
                 if (!window.Module._malloc) return;
-                const response = await fetch(modelUrl);
-                const buffer = await response.arrayBuffer();
+                 
+                const buffer = weightsBuffer;
                 const bytes = new Uint8Array(buffer);
                 const weightsPtr = window.Module._malloc(bytes.length);
                 window.Module.HEAPU8.set(bytes, weightsPtr);

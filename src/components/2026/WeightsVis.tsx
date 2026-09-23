@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import byteFreqsData from './byteFreqs.json';
 import MatrixCanvas from './MatrixCanvas';
 import { getTensors, formatByteName, quantile } from './weightsUtils';
@@ -7,7 +7,7 @@ const byteFreqs = byteFreqsData as Record<string, number>;
 const TENSORS = getTensors();
 const TENSOR_NAMES = Object.keys(TENSORS);
 
-export default function WeightsVis({ modelUrl }: { modelUrl: string }) {
+export default function WeightsVis({ weightsBuffer }: { weightsBuffer: ArrayBuffer }) {
     const [ready, setReady] = useState(false);
     const [weights, setWeights] = useState<Float32Array | null>(null);
     const [tensorName, setTensorName] = useState('tok_embed');
@@ -17,14 +17,11 @@ export default function WeightsVis({ modelUrl }: { modelUrl: string }) {
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
-        const load = async () => {
-            const resp = await fetch(modelUrl);
-            const buf = await resp.arrayBuffer();
-            setWeights(new Float32Array(buf));
+        if (weightsBuffer) {
+            setWeights(new Float32Array(weightsBuffer));
             setReady(true);
-        };
-        load();
-    }, [modelUrl]);
+        }
+    }, [weightsBuffer]);
 
     useEffect(() => {
         if (!ready || !weights) return;
@@ -153,8 +150,8 @@ export default function WeightsVis({ modelUrl }: { modelUrl: string }) {
                         <input 
                             type="range" 
                             min="0" 
-                            max="0.05" 
-                            step="0.0001" 
+                            max="0.01" 
+                            step="0.00001" 
                             value={threshold} 
                             onChange={e => setThreshold(parseFloat(e.target.value))} 
                         />

@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ByteGPTApp from '../components/2026/ByteGPT.tsx';
+import ByteGPTContainer from '../components/2026/ByteGPTContainer.tsx';
 
 import inferWasmUrl from '../assets/2026/bytegpt/infer.wasm?url';
 import inferJsUrl from '../assets/2026/bytegpt/infer.js?url';
@@ -22,5 +22,5 @@ import modelBinUrl from '../assets/2026/bytegpt/model_linux.bin?url';
   <script is:inline src={inferJsUrl}></script>
 
   <h1 class="text-3xl font-bold mb-4 font-mono">ByteGPT</h1>
-  <ByteGPTApp client:only="react" modelUrl={modelBinUrl} />
+  <ByteGPTContainer client:only="react" modelUrl={modelBinUrl} />
 </Layout>
