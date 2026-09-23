@@ -21,33 +21,41 @@ export default function MatrixCanvas({
         const ctx = canvas.getContext('2d');
         const { width, height } = canvas;
         
-        ctx.clearRect(0, 0, width, height);
-        
         const { data, rows, cols, maxAbs } = activeMatrix;
         
-        const cellW = scale;
-        const cellH = scale;
+        const imageData = ctx.createImageData(width, height);
+        const imgPixels = imageData.data;
+        const normFactor = 255 / (maxAbs + 1e-6);
         
-        const startC = Math.max(0, Math.floor(-offset.x / cellW));
-        const startR = Math.max(0, Math.floor(-offset.y / cellH));
-        const endC = Math.min(cols, Math.ceil((width - offset.x) / cellW));
-        const endR = Math.min(rows, Math.ceil((height - offset.y) / cellH));
+        const colMapping = new Int32Array(width);
+        for (let px = 0; px < width; px++) {
+            colMapping[px] = Math.floor((px - offset.x) / scale);
+        }
         
-        if (endC <= startC || endR <= startR) return;
-        
-        // for better performance, could use ImageData, but fillRect is usually fine for these sizes
-        for (let r = startR; r < endR; r++) {
-            for (let c = startC; c < endC; c++) {
-                const val = data[r * cols + c];
-                const norm = val / (maxAbs + 1e-6);
-                if (val < 0) {
-                    ctx.fillStyle = `rgb(0, 0, ${Math.floor(-norm * 255)})`;
-                } else {
-                    ctx.fillStyle = `rgb(0, ${Math.floor(norm * 255)}, 0)`;
+        for (let py = 0; py < height; py++) {
+            const r = Math.floor((py - offset.y) / scale);
+            if (r < 0 || r >= rows) continue;
+            
+            const rowOffset = r * cols;
+            let destIdx = py * width * 4;
+            
+            for (let px = 0; px < width; px++) {
+                const c = colMapping[px];
+                if (c >= 0 && c < cols) {
+                    const val = data[rowOffset + c];
+                    
+                    if (val < 0) {
+                        imgPixels[destIdx + 2] = -val * normFactor; // blue
+                    } else if (val > 0) {
+                        imgPixels[destIdx + 1] = val * normFactor; // green
+                    }
+                    imgPixels[destIdx + 3] = 255; // alpha
                 }
-                ctx.fillRect(offset.x + c * cellW, offset.y + r * cellH, cellW, cellH);
+                destIdx += 4;
             }
         }
+        
+        ctx.putImageData(imageData, 0, 0);
     }, [activeMatrix, offset, scale]);
 
     const getMouseCoords = (e) => {
@@ -62,24 +70,43 @@ export default function MatrixCanvas({
         };
     };
 
-    const handleWheel = (e) => {
-        e.preventDefault();
-        const zoomSpeed = 0.1;
-        const zoom = e.deltaY < 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+    const stateRef = useRef({ offset, scale });
+    useEffect(() => {
+        stateRef.current = { offset, scale };
+    }, [offset, scale]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
         
-        const { mx, my } = getMouseCoords(e);
-        
-        const px = (mx - offset.x) / scale;
-        const py = (my - offset.y) / scale;
-        
-        const newScale = Math.max(0.1, Math.min(150, scale * zoom));
-        
-        setOffset({
-            x: mx - px * newScale,
-            y: my - py * newScale
-        });
-        setScale(newScale);
-    };
+        const handleWheelNative = (e) => {
+            e.preventDefault();
+            const zoomSpeed = 0.1;
+            const zoom = e.deltaY < 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+            
+            const { offset: prevOffset, scale: prevScale } = stateRef.current;
+            
+            const px = (mx - prevOffset.x) / prevScale;
+            const py = (my - prevOffset.y) / prevScale;
+            
+            const newScale = Math.max(0.1, Math.min(150, prevScale * zoom));
+            
+            setOffset({
+                x: mx - px * newScale,
+                y: my - py * newScale
+            });
+            setScale(newScale);
+        };
+
+        canvas.addEventListener('wheel', handleWheelNative, { passive: false });
+        return () => canvas.removeEventListener('wheel', handleWheelNative);
+    }, []);
 
     const handleMouseDown = (e) => {
         setIsDragging(true);
@@ -119,7 +146,6 @@ export default function MatrixCanvas({
             width={800}
             height={500}
             className="absolute top-0 left-0 w-full h-full"
-            onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
