@@ -27,3 +27,5 @@ pnpm-debug.log*
 local/personal-website-*.json
 deploykey*
 local/vergilcpy/
+src/assets/2026/bytegpt/rawmodel.bin
+local/reference/

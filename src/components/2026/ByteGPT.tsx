@@ -551,7 +551,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                     </label>
                 </div>
                 <div className="text-gray-700 ml-2">Tok/s: {stats.tokPerSec.toFixed(1)}</div>
-                <div className="text-gray-700">Avg. Entropy: {stats.entropy.toFixed(2)} bits</div>
+                <div className="text-gray-700">Avg. entropy: {stats.entropy.toFixed(2)} bits</div>
                 <button 
                     className={`px-3 py-1 text-white rounded ml-auto ${isInferring ? 'bg-red-500' : 'bg-blue-500 hover:bg-blue-600'}`}
                     onClick={() => setIsInferring(!isInferring)}
@@ -624,7 +624,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                     {inspectData ? (
                         <>
                             <div>
-                                <h3 className="font-bold mb-2">Logits for Next Token</h3>
+                                <h3 className="font-bold mb-1">Logits for Next Token</h3>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                     {getTopLogitsInfo(inspectData.logits, showRaw).map((x, i) => {
                                         const actualNextChar = targetBytesRef.current[inspectData.pos] || 256;

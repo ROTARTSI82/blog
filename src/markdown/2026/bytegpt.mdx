@@ -4,8 +4,21 @@ subhead: 'training a 20M toy model on linux kernel source code'
 created: 'Sep 21 2026'
 tags: 'featured'
 ---
+import { Image } from 'astro:assets';
+import lossCurve from '../../assets/2026/bytegpt/loss.jpeg';
+import tokEmbed from '../../assets/2026/bytegpt/tok_embeddings.weight.corr_rows.png';
 
-Architectural details:
+<br/>
+<center>You can also check out the [demo](/granty29/bytegpt/) for this project! This is just the blog post.</center>
+
+So I've been working on this fun little project for the past ~week, and I just wanted to talk about a few interesting details I've seen along the way.
+
+Spiritually, this project is the successor of a [previous effort](https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm) of mine to train a toy LLM model a few years ago. The code I wrote back then was super janky, and I was roughly following Karpathy's nanogpt video to learn how transformers worked. It being the big '26 though, I figured I would just have a clanker write the PyTorch training code this time instead of doing it by hand... My clanker of choice was antigravity/gemini simply because I had google's free year of gemini for students.
+
+## Architecture and Setup
+
+Anyways-- I chose a pretty bog-standard architecture for my model, though I chose to skip tokenization entirely and simply train on individual bytes and see how far I could get (hence, bytegpt):
+
 - RoPE.
 - Pre-RMS norm.
 - $n=24$ layers.
@@ -13,3 +26,44 @@ Architectural details:
 - $h=8$ attention heads, with $d_k = d_v = 32$.
 - SiLU activation with hidden layer dimension $d_\text{ff} = 768$.
 - Weight-tied embedding/unembedding ($256 \times 256$ matrix).
+- 4096 byte context length.
+
+This comes out to 20,525,312 fp32 parameters, so about 80MB. For my training data, I checked out `torvalds/linux.git` at commit `518e5b794c06c0f0` and simply concatenated every `**/*.c` file together. This came out to about 707MB.
+
+I wanted a context length of 4096 bytes, so I could fit a batch size of 16 in my VRAM. My clanker told me to use 4 gradient accumulation steps for an effective batch size of 64, and I trained this model for 15,000 steps (1000 warmup steps, cosine decay), reaching a train loss of ~0.537 nats/byte in ~5 epochs. On my single GPU, this took about 14 hours.
+
+Anyways, the full training code is available at [`train.py`](https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/train.py), and the model is implemented in [`charmodel.py`](https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/charmodel.py). It's very little code (only 417 lines total!), and gemini was able to basically one-shot this after I prompted it with the architecture. I think the code is very clean, and pretty informative too.
+
+## Results
+
+<Image src={lossCurve} alt="the loss curve of the training run" style="width: 50%; margin: auto;" />
+
+After training finished, I was pretty impressed with how this small model was doing! Previously, I had attempted to train models on some of my discord chat logs, but that dataset was much smaller (~90MB), so I supplemented it with other things (like random files from my computer/gdrive, project gutenberg books, Lean code from mathlib, etc). However, all these different types/modes of data was probably just too much for my tiny model, and my previous attempts werent very good.
+
+But linux kernel source was just a god-tier dataset. It's a big hunk of text with clear structure for the model to learn, and this model's outputs were nearly always valid C syntax that coherently referenced previously defined variables and such. This was something none of my previous attempts at this achieved! If I prompted it with some term, the model would just run with it and refer back to it pretty well. Of course, the code it generates is just nonsense, but one would have to look at it and read for a bit before realizing that. I was impressed.
+
+## The C++ Inference Engine
+
+Because I had intentionally made this model as dead simple as possible, I thought it would be fun to write an extremely minimal and lightweight inference engine for it. Maybe in the future I could try running it in weird places, and so I wrote [`model.cpp`](https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/src/model.cpp) implementing the full thing with zero dependencies. This is only a 273 line file, so it's a very reasonable read if you want to learn how attention/transformers work.
+
+I didn't really put much effort into optimizing it that much, but simply by compiling with `-O3 -ffast-math`, this thing runs at ~115 tok/s for smaller contexts. clang is just magic, man. As expected, the most memory intensive part of the inference is the KV cache, which is 24 layers * 4096 ctx * 256 dim = 25,165,824 floats for each vector. Since we store K and V at full FP32 (4 bytes), this comes out to over 200MB.
+
+To load the model, I simply modified my python code to dump the raw fp32 PyTorch tensors to a file, and I simply `mmap`'d it and just directly interpreted it as a `CharModel` struct (as defined in `model.cpp`). Everything is just as simple as possible, and if you want to play around with it, you can use reference [`testing.cpp`](https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/src/testing.cpp) or [`infer.py`](https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/infer.py).
+
+This C++ inference engine is also what powers the online demo. (have you checked it out? you should really check it out.) I just compiled it to WebAssembly and pointed my friend gemini at it to make the web frontend, and while the clanker was at it, I also had it make a visualization tool to scroll through the weights of the model. My favorite is `tok_embed.row_corr`, which shows the correlation between the rows of the token embedding matrix:
+
+<br/>
+<Image src={tokEmbed} alt="visualization of token embedding matrix row correlations" style="image-rendering: pixelated; width: 50%; margin: auto;" />
+
+The $i$th row of the token embedding matrix $A$ corresponds to the embedding vector for byte $i$. Thus, the image above is a visualization of the matrix $A A^T$, which is the matrix of dot products of rows of $A$: entry $i,j$ of $A A^T$ is the dot product of row $i$ with row $j$ of $A$. As expected, the main diagonal lights up, but you also see a secondary diagonal above it. This corresponds to the relationship between lowercase and uppercase ASCII! The model has learned to point the embedding vectors for 'x' and 'X' in a similar direction. Additionally, you can see that there is a lot of empty space corresponding to untrained tokens. Since `.c` source code is text, there are quite a few bytes that literally never appear in our dataset, and some bytes that only appear a handful of times.
+
+As for the other tensors, there are clearly some patterns/structure in some of them, but it's not very interpretable. In my demo, you can also look at the attention scores computed by all 8 attention heads in all 24 of the layers, and maybe there's some cool ones hiding there. For example, on a previous model I trained, I found that layer 0 head 0 always seemed to attend strongly to the nearest capital 'I' when the previous character is a space. If anybody is inspired to play around with this model, tell me if you find anything cool!
+
+# AI Coding
+
+It's so cooked. RIP SWE.
+
+Basically everything was one-shottable. When there's a problem, it's not even worth it to try to understand it. Just tell a clanker to fix it. The AI can find and implement a fix faster than you can type, faster than you can read.
+
+Doesn't it ruin the fun a little bit? Doesn't it nuke a lot of the motivation for doing hobby projects? I had loved the frustration of working on a tough problem, playing with ideas, looking for understanding. But now there's a magical box that removes all of that. You can build more and bigger, but why? For what?
+

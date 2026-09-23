@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { link } from "../blog-util";
 import ByteGPTContainer from '../components/2026/ByteGPTContainer.tsx';
 
 import inferWasmUrl from '../assets/2026/bytegpt/infer.wasm?url';
@@ -21,6 +22,12 @@ import modelBinUrl from '../assets/2026/bytegpt/model_linux.bin?url';
   </script>
   <script is:inline src={inferJsUrl}></script>
 
-  <h1 class="text-3xl font-bold mb-4 font-mono">ByteGPT</h1>
+  <h1 class="text-3xl font-bold mb-4">ByteGPT Demo</h1>
+  <p>
+    This is a 20M-parameter byte-level transformer trained on ~700MB of linux kernel code for ~5 epochs (14 hours on a single GPU).
+    Training loss reached about 0.537 nats/byte.
+    Read the <a href={link("/blog/2026/bytegpt/")}>blog post</a> and the <a href="https://github.com/ROTARTSI82/monorepo/tree/master/undergrad/bytegpt/">source code</a>!
+  </p>
+  <br/>
   <ByteGPTContainer client:only="react" modelUrl={modelBinUrl} />
 </Layout>
