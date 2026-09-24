@@ -172,7 +172,7 @@ const ByteGPTApp = ({ weightsBuffer }) => {
             
             if (diffIdx < state.bytes.length) {
                 if (Date.now() - state.lastTypeTime < 300) {
-                    requestAnimationFrame(loop);
+                    setTimeout(loop, 0);
                     return; 
                 }
                 state.bytes = state.bytes.slice(0, diffIdx);
@@ -318,10 +318,10 @@ const ByteGPTApp = ({ weightsBuffer }) => {
                 });
             }
             
-            requestAnimationFrame(loop);
+            setTimeout(loop, 0);
         };
         
-        requestAnimationFrame(loop);
+        setTimeout(loop, 0);
         return () => { active = false; };
     }, [ready]);
 

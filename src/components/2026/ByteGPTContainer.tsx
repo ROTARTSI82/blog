@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ByteGPTApp from './ByteGPT';
 import WeightsVis from './WeightsVis';
 

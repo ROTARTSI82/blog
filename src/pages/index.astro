@@ -87,30 +87,21 @@ const opt: Intl.DateTimeFormatOptions = {year: 'numeric', month: 'short', day: '
 		<h1>Projects & Demos</h1>
 		<ul class="space-apart">
 			<li>
-				<a href="https://github.com/ROTARTSI82/Chess">ROTARTSI82/Scacus</a>: A UCI chess engine written in C++,
-				with magic bitboards and multithreading. Supports both normal chess and the anti-chess variant,
-				rated at about ~1600 Lichess ELO in chess.
+				<a href={link("bytegpt/")}>bytegpt</a>:
+				A 20M parameter character-level transformer model trained on linux kernel source,
+				running in-browser with WebAssembly.
 			</li>
-			<li><em>ROTARTSI82/ATCS</em>
-				<ul>
-					<li>
-						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATCompilers">ATCompilers</a>: A compiler for
-						a custom Pascal dialect targeting MIPS32 assembly, written in Java.
-					</li>
-					<li>
-						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATNeural/chessnn/llm">LLM</a>:
-						Trained a custom 40M-parameter character-level transformer on my text messages.
-						The transformer was implemented from scratch in PyTorch, and I performed a scaled-up training run of
-						a 150M-parameter model on UW's Hyak Klone supercomputer cluster.
-					</li>
-					<li>
-						<a href="https://github.com/ROTARTSI82/ATCS/tree/ATNeural">ATNeural</a>: A toy neural network for
-						digit recognition written in Rust, implementing backprop and the ADAM optimizer.
-					</li>
-				</ul>
+			<li>
+				<a href="https://github.com/ROTARTSI82/Chess">ROTARTSI82/Scacus</a>: 
+				A multithreaded C++ chess engine with magic bitboards and alpha-beta search.
+				Searches millions of positions per second, reaching a Lichess rating of over 1600.
+			</li>
+			<li>
+				<a href="https://github.com/ROTARTSI82/ATCS/tree/ATCompilers">ROTARTSI82/ATCS:ATCompilers</a>:
+				A compiler for a custom Pascal dialect targeting MIPS32 assembly, written in Java.
 			</li>
 			<li><a href={link("camera-sim/")}>WebGL Ray Tracer with GLSL</a> (extremely janky)</li>
-			<li><a href={link("blog/2025/comparch/")}>4-Bit Breadboard Computer</a></li>
+			<li><a href={link("blog/2026/chump/")}>4-Bit Computer</a></li>
 		</ul>
 		<hr/>
 
