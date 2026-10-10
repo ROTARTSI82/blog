@@ -9,7 +9,7 @@
 }
 
 .astro-code {
-  @apply m-2 p-3 rounded-md;
+  @apply m-3 p-2 rounded-md;
 }
 
 #table-of-contents+ul {
@@ -30,7 +30,8 @@
 
 .tight-flex {
   @apply mt-1 flex;
-  > * {
+
+  >* {
     @apply mx-2 my-auto;
   }
 }
@@ -39,11 +40,11 @@
   @apply p-2 ml-6;
 }
 
-:not(.astro-code) > code {
+:not(.astro-code)>code {
   @apply bg-gray-200 rounded-md px-1 py-0.5 text-sm;
 }
 
-.yt-embed > iframe {
+.yt-embed>iframe {
   @apply m-auto rounded-sm my-1;
 }
 
