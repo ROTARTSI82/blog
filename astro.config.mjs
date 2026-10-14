@@ -20,6 +20,9 @@ export default defineConfig({
   outDir: 'public_html/',
   trailingSlash: 'always',
   markdown: {
+    shikiConfig: {
+      theme: 'gruvbox-light-soft',
+    },
     processor: unified({
       remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
       rehypePlugins: [

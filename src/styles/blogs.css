@@ -4,6 +4,10 @@
   @apply italic;
 }
 
+details {
+  @apply p-2 m-2 bg-sky-100;
+}
+
 .subhead {
   @apply text-sm;
 }
