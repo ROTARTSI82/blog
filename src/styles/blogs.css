@@ -24,8 +24,14 @@ details {
   }
 }
 
+.blog-tikz-done {
+  @apply my-6 overflow-x-auto;
+}
+
 .blog-tikz-done>svg {
-  @apply m-auto mt-3;
+  @apply m-auto my-2;
+  max-width: 100%;
+  height: auto;
 }
 
 .pfp {

@@ -3,6 +3,117 @@ import type { Node, Parent } from 'unist';
 import type { Code, Html, Text } from "mdast"
 import { h } from 'hastscript';
 import { toText } from 'hast-util-to-text';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Scaling factor for TikZ diagrams: scales overall dimensions, text labels, and stroke weights
+const TIKZ_SCALE = 1.75;
+
+function renderTikzToSvg(tikzCode: string, scale = TIKZ_SCALE): string {
+  const hash = createHash('sha256').update(`scale:${scale}:${tikzCode}`).digest('hex');
+  const cacheDir = join(process.cwd(), '.tikz-cache');
+  mkdirSync(cacheDir, { recursive: true });
+  const cachePath = join(cacheDir, `${hash}.svg`);
+
+  if (existsSync(cachePath)) {
+    return readFileSync(cachePath, 'utf-8');
+  }
+
+  // Strip explicit \begin{document} and \end{document} if already present
+  const codeWithoutDoc = tikzCode
+    .replace(/\\begin\{document\}/g, '')
+    .replace(/\\end\{document\}/g, '');
+
+  const lines = codeWithoutDoc.trim().split('\n');
+  const preamble: string[] = [];
+  const body: string[] = [];
+
+  for (const line of lines) {
+    const s = line.trim();
+    if (s.startsWith('%') || s.startsWith('\\documentclass')) {
+      continue;
+    }
+    if (
+      s.startsWith('\\usepackage') ||
+      s.startsWith('\\usetikzlibrary') ||
+      s.startsWith('\\pgfplotsset') ||
+      s.startsWith('\\tikzset')
+    ) {
+      preamble.push(line);
+    } else {
+      body.push(line);
+    }
+  }
+
+  const tex = [
+    '\\documentclass[dvisvgm]{standalone}',
+    '\\usepackage{tikz}',
+    '\\usepackage{amsmath,amssymb}',
+    ...preamble,
+    '\\begin{document}',
+    ...body,
+    '\\end{document}'
+  ].join('\n');
+
+  const workDir = join(tmpdir(), `tikz-${hash.slice(0, 10)}`);
+  mkdirSync(workDir, { recursive: true });
+
+  try {
+    const texPath = join(workDir, 'diagram.tex');
+    writeFileSync(texPath, tex, 'utf-8');
+
+    const latex = spawnSync('latex', ['-interaction=nonstopmode', 'diagram.tex'], { cwd: workDir });
+    if (latex.status !== 0) {
+      console.error(`[TikZ] latex compilation error for ${hash}:`, latex.stdout?.toString() || latex.stderr?.toString());
+      throw new Error(`LaTeX compilation failed for diagram ${hash}`);
+    }
+
+    const dvisvgm = spawnSync('dvisvgm', [
+      '--no-fonts',
+      '--exact-bbox',
+      `-Z${scale}`,
+      'diagram.dvi',
+      '-o',
+      'diagram.svg'
+    ], { cwd: workDir });
+    if (dvisvgm.status !== 0) {
+      console.error(`[TikZ] dvisvgm error for ${hash}:`, dvisvgm.stderr?.toString());
+      throw new Error(`dvisvgm failed for diagram ${hash}`);
+    }
+
+    const svgPath = join(workDir, 'diagram.svg');
+    if (!existsSync(svgPath)) {
+      throw new Error(`dvisvgm did not output SVG for diagram ${hash}`);
+    }
+
+    let svg = readFileSync(svgPath, 'utf-8');
+    // Strip XML declaration and generator comments for inlining
+    svg = svg
+      .replace(/<\?xml[\s\S]*?\?>/, '')
+      .replace(/<!--[\s\S]*?-->/, '')
+      .trim();
+
+    writeFileSync(cachePath, svg, 'utf-8');
+    return svg;
+  } finally {
+    try {
+      rmSync(workDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
+    }
+  }
+}
 
 export function remarkCustomPlugin() {
   return (tree: Node) => {
@@ -10,10 +121,17 @@ export function remarkCustomPlugin() {
       if (node.lang === 'tikz') {
         const tikzCode = node.value.split('\n')
           .map(line => line.trim()).filter(x => x).join('\n');
-        // Added accessibility wrapper for TikZ
-        // Moved code block outside the div to help Reader Mode extraction
+
+        let svgContent = '';
+        try {
+          svgContent = renderTikzToSvg(tikzCode);
+        } catch (err: any) {
+          console.error('[remarkCustomPlugin] Failed to render TikZ diagram:', err.message);
+          svgContent = `<p class="tikz-error text-red-500 font-bold">Failed to compile TikZ diagram</p>`;
+        }
+
         const htmlString = `<div class="blog-tikz-done" role="img" aria-label="TikZ Diagram">
-<script type="text/tikz">${tikzCode}</script><code class="raw-tex">${tikzCode}</code></div>`;
+${svgContent}<code class="raw-tex">${escapeHtml(tikzCode)}</code></div>`;
 
         (node as unknown as Html).type = 'html';
         node.value = htmlString;

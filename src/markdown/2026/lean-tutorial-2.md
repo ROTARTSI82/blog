@@ -1,5 +1,6 @@
 ---
 title: "lean tutorial: the type multiverse (1 of ?)"
+subhead: "type universes, large elimination, the axiom of choice, and advanced inductive types."
 created: "October 15 2026"
 tags: "hide-ls"
 ---
@@ -7,14 +8,15 @@ tags: "hide-ls"
 # **==HELLO! THIS IS A WORK-IN-PROGRESS DRAFT OF A POST==**
 
 
+Welcome back! This is the second post of the series, and you can read the first post at [lean-tutorial-1](/granty29/blog/2026/lean-tutorial-1/).
+
 # Table of Contents
 <!-- toc -->
 
 
-
 # Universes
 
-Finally it is time to address this detail that I have been glossing over: type universes. Recall that ages ago, I told you that `Prop : Type`, and `Type : Type 1`, and `Type 1 : Type 2`, and so on. These universes can also be indexed using the `Sort` keyword, and `Type u` is the same thing as `Sort (u+1)`. This is because `Sort 0` is `Prop`, then `Sort 1` is `Type` (aka. `Type 0`), then `Sort 2` is `Type 1`, and so on. To get a fuller picture of how this hierarchy of universes work, let me first give you an idealized mathematical description of their semantics:
+Finally it is time to address a detail that I have been glossing over this whole time: type universes. Recall that ages ago, I told you that `Prop : Type`, and `Type : Type 1`, and `Type 1 : Type 2`, and so on. These universes can also be indexed using the `Sort` keyword, and `Type u` is the same thing as `Sort (u+1)`. This is because `Sort 0` is `Prop`, then `Sort 1` is `Type` (aka. `Type 0`), then `Sort 2` is `Type 1`, and so on. To get a fuller picture of how this hierarchy of universes work, let me first give you an idealized mathematical description of their semantics:
 
 1. Every type $X$ is a term in **exactly one** universe $\mathcal{U}_i$. This is true even when $X$ is a universe, in which case we use the rule $\mathcal{U}_i : \mathcal{U}_{i+1}$.
     - In this regard, lean is unlike some other languages, which have _cumulative_ universes. In that case, if $X : \mathcal{U}_i$ and $\mathcal{U}_i : \mathcal{U}_j$, then $X : \mathcal{U}_j$. By eschewing cumulative universes, lean makes typechecking easier at the cost of a little bit of extra boilerplate.
@@ -53,10 +55,10 @@ def Hom (X : Type u) (Y : Type v) : Type (max u v) :=
 
 #check Hom  /- Hom.{u, v} (X : Type u) (Y : Type v) : Type (max u v) -/
 #check ((fun x ↦ x + 1) : Hom.{0, 0} Nat Nat)
-#check ((fun X ↦ X → Type) : Hom.{1, 2} Type (Type 1))
+#check ((fun X ↦ X → Prop) : Hom.{1, 1} Type Type)
 ```
 
-Notice how our definition is now written `Hom.{u, v}`, indicating that it is **polymorphic over universes**. It looks a lot like we have added two extra parameters, even if they use this funky syntax. However, a word of caution: even though these look a lot like the natural numbers `Nat`, they are something completely different! They are not objects within lean's type theory, but rather part of the metatheory. They are just a systematic way to refer to universes within the hierarchy, and they just as well could have been called `UniverseOne : UniverseTwo`, `UniverseTwo : UniverseThree`, etc. Although we are allowed to think of `List` as a literal function `Type u → Type u`, we are explicitly not allowed to think of `Type` or `Sort` as functions like `Nat → Type ∞`. There is no such thing as `Type ∞`, and universe indices are not natural numbers.
+Notice how our definition is now written `Hom.{u, v}`, indicating that it is **polymorphic over universes**. It looks a lot like we have added two extra parameters, even if they use this funky syntax. However, a word of caution: even though these look a lot like the natural numbers `Nat`, they are something completely different! They are not objects within lean's type theory, but rather part of the metatheory. Think of them as behaving like templates or generics; they are just a systematic way to refer to universes within the hierarchy, and they just as well could have been called `UniverseOne : UniverseTwo`, `UniverseTwo : UniverseThree`, etc. Although we were allowed to think of `List` as a literal function `Type u → Type u`, we are explicitly _not_ allowed to think of `Type` or `Sort` as functions like `Nat → Type ∞`. There is no such thing as `Type ∞`, and universe indices are not natural numbers!
 
 Another detail I want to draw your attention to is how we have defined `Hom` to work only on `Type`s and not general `Sort`s. Think back to how the `Prop` universe (aka. `Sort 0`) behaves like an edge case: if we had some `X : Sort u` and some `Y : Sort 0`, the function type `X → Y` will live in `Sort 0` and not `Sort (max u 0)`. Luckily, lean provides a special function `imax` designed specifically to handle this situation. The 'i' in `imax` stands for _impredicative_, and the function is defined like so:
 $$
@@ -70,7 +72,9 @@ def Hom (X : Sort u) (Y : Sort v) : Sort (imax u v) :=
 ```
 If you want to read about universes in more detail, the [Lean Language Reference](https://lean-lang.org/doc/reference/latest/The-Type-System/Universes/) is excellent.
 
-## Eliminating from `Prop`
+## Elimination on Prop
+
+Ok, that was a lot! We have seen that the `Prop` universe is a special little boy 
 
 
 
@@ -176,6 +180,7 @@ def fib₂ (t : Nat) : Nat × Nat :=
 #eval fib 6         /- 21 -/
 #eval (fib₂ 6).snd  /- 21 -/
 ```
+==todo: explain termination_by if lean cannot automatically infer a proof of termination==
 
 In fact, we have a much more general trick: any algorithm that provably terminates can be written as a structural recursion. Lean's `WellFounded.fix` function does exactly this, turning a proof of termination into a structural recursion that actually computes the function. Honestly, I haven't looked deeply into how it works, but the general idea is that if we show the arguments are monotonically decreasing with respect to a well-founded partial order, we are able to show termination and thus perform structural recursion. Lean has a lot of magic and automation so we don't often have to worry about this.
 

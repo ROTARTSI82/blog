@@ -3,6 +3,7 @@ public_html/
 
 # generated types
 .astro/
+.tikz-cache/
 
 # dependencies
 node_modules/

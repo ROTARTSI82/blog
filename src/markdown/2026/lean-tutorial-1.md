@@ -1,5 +1,6 @@
 ---
 title: "lean tutorial: the basics (1 of ?)"
+subhead: "dependent types, basic inductive types, and the curry-howard correspondence"
 created: "October 9 2026"
 tags: "mathposting,featured"
 ---
