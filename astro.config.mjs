@@ -21,7 +21,7 @@ export default defineConfig({
   trailingSlash: 'always',
   markdown: {
     shikiConfig: {
-      theme: 'gruvbox-light-soft',
+      theme: 'catppuccin-frappe',
     },
     processor: unified({
       remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],

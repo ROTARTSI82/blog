@@ -1,13 +1,20 @@
 ---
-title: "lean taught right: from the ground up (1 of ?)"
+title: "lean tutorial: the basics (1 of ?)"
 created: "October 9 2026"
+tags: "mathposting,featured"
 ---
 
-Hey! It's been a year since I wrote my [first blog post](/granty29/blog/2025/lean-1105/) (honestly, probably don't read that) about lean4 as I was just getting into it, and I wanted to come back and write this post to be the lean tutorial that I wish I had. To me, this is lean4 taught correctly, with an aim towards (slowly) teaching you how all the systems work at a fundamental level. I will start by approaching lean as a programming language and slowly revealing its proof assistant features, mainly because I find this way of thinking about lean to be the most helpful: a programming language that you do math in.
+Hey! It's been a year since I wrote my first blog post[^3] about lean4 as I was just getting into it, and recently I've been wanting to come back and write a better post.
 
-This tutorial will be pretty fast-paced, and I think that the correct way to read this will be to pull open an editor, type out the example code, and explore what's going on by clicking around with the lean **InfoView**. If you are a nerd, you can use the nvim plugin, but normal people use VSCode. And if you're extremely lazy, you can probably get by using the online lean playground at [live.lean-lang.org](https://live.lean-lang.org/). ==I will be including some links to open live leans of my example code in each section==
+I will be writing this as the lean tutorial I wish I had, presenting the topics in my desired order and going to a level of depth that I would have wanted. My preferences might not suit you, though! I have written this post with an aim towards (slowly) teaching you how all the systems work at a fundamental level, rather than teaching you how you might want to do things in practice. For that, you will have to refer to another resource, or just simply get your hands dirty yourself.
 
-TODO: more yapping, fundamentally how the system works and not how to actually use it.
+[^3]: I've delisted it, but you can still find it by url or in my blog's file browser at `blog/2025/lean-1105` on this site. Honestly, probably don't read it....
+
+This tutorial will be pretty fast-paced, and I think that the correct way to read this will be to pull open an editor, type out the example code, and explore what's going on by clicking around with the lean **InfoView**. The canonical way to run lean is through the VSCode extension and `elan`, but there are also things like a [neovim plugin](https://github.com/julian/lean.nvim) for the nerds. If you're _extremely_ lazy, you can probably get by using the online lean playground at [live.lean-lang.org](https://live.lean-lang.org/).
+
+Anyways, this post will be the first in a series. I will start by approaching lean as a programming language and slowly revealing its proof assistant features, mainly because I find this way of thinking about lean to be the most helpful: a programming language that you do math in.
+
+==I am still working on writing all the tutorials in the series, and I may come back and edit this post!==
 
 # Table of Contents
 <!-- toc -->
@@ -335,7 +342,7 @@ There is just no way to construct a term of the `Empty` type, and in fact the fu
 | F   |  T  |   T            |
 | F   |  F  |   T            |
 
-The core idea now is to use inhabited types like `Unit` to represent true propositions and uninhabited types like `Empty` to represent false propositions. For example, we can interpret `2 + 2 = 5` as a type whose terms are precisely proofs that `2 + 2 = 5`. Then, the function type `P → Q` corresponds to the implication $P \implies Q$ because it is literally taking a proof of `P` and using it to construct a proof of `Q`.
+The core idea now is to use inhabited types like `Unit` to represent true propositions and uninhabited types like `Empty` to represent false propositions. For example, we can interpret `2 + 2 = 5` as a type whose terms are precisely the proofs that `2 + 2 = 5`. Then, the function type `P → Q` corresponds to the implication $P \implies Q$ because it is literally taking a proof of `P` and using it to construct a proof of `Q`.
 
 We can also do similar analyses to discover how other types relate to proofs and logical connectives. The `Prod` type we saw earlier corresponds to logical 'and': a proof of $P \land Q$ is a pair consisting of both a proof of $P$ and a proof of $Q$. A term of the type `P × Q` is a tuple consisting of both a term of the type `P` and a term of type `Q`. Likewise, `Sum` corresponds to logical 'or': a proof of $P \lor Q$ is either a proof of $P$ or a proof of $Q$. A term of `P ⊕ Q` is either a term of `P` or a term of `Q`. Logical negation can be defined using the fact that $\lnot P \iff (P \implies \text{False})$.
 
@@ -395,7 +402,7 @@ In the case of `∀(a : α), P a`, there is no difference between writing simply
 
 There is still a lot more to learn about the `Prop` universe, but at this point, all of this theory is still probably a little nebulous. So, let's finally get some practice proving some theorems!
 
-# Theorem Proving (pt. 1)
+# Baby's First Steps in Theorem Proving
 
 Let's start by proving one of DeMorgan's identities:
 
@@ -474,265 +481,9 @@ That about covers it for tactic mode! Of course, there are a ton of tactics in l
 
 Now finally, I have one last word about this `demorgans` example. You might notice that if you try to prove the converse, that $\lnot (P \lor Q) \implies \lnot P \land \lnot Q$, you get a bit stuck. Try it and see what happens!
 
-This is because so far, all the methods of proof I've shown have been **constructive**, but that statement cannot be proven constructively. I'm no expert in this stuff (wth is intuitionism?) but bear with me. What I mean by this is that the proof of the converse relies on the **law of the excluded middle**, that $P \lor \lnot P$ for all propositions $P$. However, this proof is impossible to _construct_ without knowing what $P$ is, since we _must_ construct either a proof of $P$ or a proof that assuming $P$ leads to a contradiction. But of course, there is a way to get out of this pickle, as lean allows you to use classical reasoning and assume the law of the excluded middle. We will see exactly how it does so shortly (spoiler: using the axiom of choice), but we are currently missing a few prerequisites, so let us keep moving along for now.
+This is because so far, all the methods of proof I've shown have been **constructive**, but that statement cannot be proven constructively. I'm no expert in this stuff (wth is intuitionism?) but bear with me. What I mean by this is that the proof of the converse relies on the **law of the excluded middle**, that $P \lor \lnot P$ for all propositions $P$. However, this proof is impossible to _construct_ without knowing what $P$ is, since we _must_ construct either a proof of $P$ or a proof that assuming $P$ leads to a contradiction. We cannot appeal to anything external, and we are stuck.
 
+Of course, there is a way to get out of this pickle, as lean can obviously allow you to use classical reasoning and assume the law of the excluded middle. We will see exactly how it does so in the next post (spoiler: using the axiom of choice), but we will stop here for now.
 
-# Universes
-
-Finally it is time to address this detail that I have been glossing over: type universes. Recall that ages ago, I told you that `Prop : Type`, and `Type : Type 1`, and `Type 1 : Type 2`, and so on. These universes can also be indexed using the `Sort` keyword, and `Type u` is the same thing as `Sort (u+1)`. This is because `Sort 0` is `Prop`, then `Sort 1` is `Type` (aka. `Type 0`), then `Sort 2` is `Type 1`, and so on. To get a fuller picture of how this hierarchy of universes work, let me first give you an idealized mathematical description of their semantics:
-
-1. Given any two types $X$ and $Y$ from any universe, we can find some universe $\mathcal{U}$ big enough to contain them both, i.e. $X, Y : \mathcal{U}$. This is true even if $X$ and $Y$ are themselves universes.
-    - Additionally, if $X : \mathcal{U}_1$ and $\mathcal{U}_1 : \mathcal{U}_2$, then $X : \mathcal{U}_2$. Actually, this is not strictly true, but again this is a useful lie.
-2. Given any $X, Y : \mathcal{U}$ in a common universe, we can form a function type $(X \to Y) : \mathcal{U}$ that lives in the same universe.
-3. Given any $X : \mathcal{U}$ and a function $\beta : X \to \mathcal{U}$, we can form a dependent function type in the same universe: $((x : X) \to \beta\;x) : \mathcal{U}$. Using a different notation for the `Pi` type, you sometimes might see this written as $\left(\prod\limits_{x : X} \beta\;x\right) : \mathcal{U}$.
-4. We can form an inductive type $I : \mathcal{U}$ if every single constructor for $I$ takes parameters whose types live in $\mathcal{U}$.
-    - Note that for inductive type families like the product type $(\times)$, we do not consider the parameters to the type family itself. Mathematically, we are thinking of $\times : \mathcal{U} \to \mathcal{U} \to \mathcal{U}$ as a type family defining a new inductive type $\alpha \times \beta$ for each pair of types $\alpha, \beta : \mathcal{U}$. We do not think of a single constructor with type
-      $$
-      (\times)\mathrm{.mk} : \{\alpha : \mathcal{U}\} \to \{\beta : \mathcal{U}\} \to \alpha \to \beta \to \alpha \times \beta,
-      $$
-      but rather a family of constructors with type
-      $$
-      (\alpha \times \beta)\mathrm{.mk} : \alpha \to \beta \to \alpha \times \beta.
-      $$
-      Thus, $\alpha : \mathcal{U}$ and $\beta : \mathcal{U}$ are not a parameters of the constructor $(\times)\mathrm{.mk}$, but rather they are parameters of the type family $(\times)$. Now, we see it will be valid to have $\alpha\times\beta : \mathcal{U}$ since for all $\alpha, \beta : \mathcal{U}$, the types of the arguments to $(\times)\mathrm{.mk}$ all live in the $\mathcal{U}$ universe.
-
-These rules apply for the normal type universes `Type 0`, `Type 1`, etc., but `Prop` follows some special rules:
-1. Given $X : \mathcal{U}$ and $P : \mathrm{Prop}$, we can form a function type $(X \to P) : \mathrm{Prop}$ that still lives in $\mathrm{Prop}$ regardless of how big $\mathcal{U}$ is.
-2. Given any $X : \mathcal{U}$ and $P : X \to \mathrm{Prop}$, we can form a dependent function type $((x : X) \to P\;x) : \mathrm{Prop}$. Recall that this is actually the type $(\forall(x : X), P\;x) : \mathrm{Prop}$
-3. We can always form an inductive type $I : \mathrm{Prop}$ regardless of the universe levels of types appearing in its constructors.
-
-Try to interpret the special rules for the `Prop` universe. What are they telling us, and why do we need them?
-
-Now, let's see how all of this is reflected in lean. First, we should note how universe variables work. They are 
-
-> And there is more: While we could consider `List` as a literal function from `Type` to `Type`, here we explicitly do NOT think of `Type` as a function from the naturals to `Type ∞` or something like that. Not only does `Type ∞` not exist, the numbering of 1, 2, 3 are not the same as the integers `Int` or the natural numbers `Nat` in Lean-- they are completely unrelated, and they are not objects inside of Lean's type theory at all. They exist on the level of the _metatheory_, and we just happen to write `Type 1` and `Type 2` because it is a convenient notation. We just as well could have called this heirarchy `UniverseOne : UniverseTwo` and `UniverseTwo : UniverseThree` and so on.
-> 
-> Anyways, what's the point of all this? So far this might all seem like a load of very confusing abstract nonsense, but it is _cool_ abstract nonsense. See, I lied a little when I said that `List` was a function from `Type` to `Type`. In fact, `List` is an infinite family of functions: for every universe level `u`, there is a function `List.{u}` from `Type u` to `Type u`! This is something called _universe polymorphism_.
-
-==todo==
-
-Unlike many other languages, Lean's type universes are _not_ cumulative. This means that if $X : \mathcal{U}_1$ and $\mathcal U_1 : \mathcal U_2$, it is not true that $X : \mathcal{U}_2$. We do this to make type checking easier, as every type is a term in exactly one universe.
-
-
-
-## Propositional Equality
-
-```lean
-inductive Eq {α : Sort u} (a : α) : α → Prop where
-  | refl : Eq a a
-```
-
-
-```lean
-axiom Eq.rec {α : Sort u} {a✝ : α} {motive : (a : α) → a✝ = a → Sort u_1}
-  (refl : motive a✝ (Eq.refl a✝))
-  {a✝¹ : α} (t : a✝ = a✝¹) : motive a✝¹ t
-```
-
-
-
-## The Axiom of Choice
-To resolve this problem, the approach that lean chooses is to make available the infamous **axiom of choice**. By the way of something called **Diaconescu's Theorem**, the axiom of choice actually implies the law of the excluded middle. Don't ask me about the details, but this works. In lean, the axiom of choice can be stated like so:
-
-```lean
-axiom Exists.choose {α : Sort u} (h : ∃(a : α), True) : α
-```
-
-Ok, I must admit that I am lying just a little: the real `Classical.choice` axiom in lean is phrased slightly differently, but it is logically equivalent to doing it like this. Note that the `axiom` keyword behaves similarly to `def` or `theorem` in that it introduces a symbol with a given type, but it does not require you to provide any definition or proof! The symbol (which can act as the proof of some mathematical statement) is just taken be defined axiomatically. This axiom says that given a proof that some value of type `α` must exist, then I must be able to construct a real term of the type `α`. Philosophically, we can understand that this axiom is nonconstructive because merely proving that something exists does not necessarily give us an algorithm to actually construct it. Thus, this is a `noncomputable` function.
-
-If you continue to look at this definition, however, you might notice that this looks exactly like a projection out of the `Exists` type. You should wonder: why can't we just provide a real definition for this function?
-
-```lean
-def Exists.choose {α : Sort u} (h : ∃(a : α), True) : α :=
-  match h with
-  | .intro a _ => a
-```
-
-This looks like it might work, but we run into the weirdness of the `Prop` universe here. We are crossing from the `Prop` universe into the `Type` universe using a `match`, and this process of crossing universes is called **large elimination**. There are some restrictions on when we are able to do large elimination that prevent us from defining `Exists.choose` as above. This is to prevent logical inconsistencies: remember that because of proof irrelevance, two proofs of existence are considered definitionally equal, even if different values were used to construct them! Thus, for example, we might have this:
-
-```lean
-def IsEven (n : Nat) : Prop :=
-  ∃(k : Nat), 2*k = n
-
-theorem exists_even_v1 : ∃(n : Nat), IsEven n := ⟨2, ⟨1, rfl⟩⟩
-theorem exists_even_v2 : ∃(n : Nat), IsEven n := ⟨4, ⟨2, rfl⟩⟩
-
-theorem does_two_equals_four : exists_even_v1.choose = exists_even_v2.choose := rfl
-```
-
-We have not covered how equality works in lean, but just know that it is an inductive type that can be proven using reflexivity `rfl`. The proof above is actually accepted by lean, but it is perfectly fine as `exists_even_v1` is considered definitionally equal to `exists_even_v2`, and `.choose` is noncomputable. Outside of the `Prop` universe, the values `2` and `4` used to prove that there exists an even number cannot be recovered, as if you were able to do that, you would be able to prove that `2 = 4`. Still, within the `Prop` universe, you are allowed to do pattern matching perfectly fine, as long as those values never escape `Prop`. I'm deliberately being a bit vague here, and I plan to cover some more details once we understand universe. ==todo: move this section later?==
-
-
-
-# Recursive Inductive Types
-
-At this point in our journey, we have yet to meet a very important class of inductive types: the recursive inductive type. This category includes types like `Nat`, `List`, and `String`, and what makes them _recursive_ is the fact that `Nat` has a constructor that takes in a `Nat` parameter, `List` has a constructor with a `List` parameter, and so on. You can construct a new `Nat` by adding one to an existing `Nat`, and you can make a new `List` by prepending an element to the front of an existing `List`. Let's start with the `Nat` type, which is defined like so:
-
-```lean
-inductive Nat where
-  | zero : Nat
-  | succ : Nat → Nat
-```
-As you'd expect, you can pattern match on `Nat` like any other inductive type, but because `Nat` is a _recursive_ inductive type, we are able to define _recusrive_ functions like so:
-
-```lean
-def factorial (t : Nat) : Nat :=
-  match t with
-  | 0 => 1
-  | n+1 => (n + 1) * factorial n 
-
-#eval factorial 5  /- 120 -/
-```
-
-Notice how our definition of `factorial` is recursive, where the value of `factorial (n + 1)` depends on the value of `factorial n`. Let's take a closer look at what is happening under the hood with the `Nat` type's recursor:
-
-```lean
-axiom Nat.rec {motive : Nat → Sort u}
-  (zero : motive Nat.zero)
-  (succ : (n : Nat) → motive n → motive n.succ)
-  (t : Nat) : motive t
-```
-
-Focus on the `succ` parameter: this corresponds to the arm of the `match` statement for the `n + 1` case where we must come up with a value of type `motive (n + 1)`. Notice how not only are we supplied with the value of `n` passed into the `Nat.succ` constructor, but we are also supplied with the value (of type `motive n`) for the result of a recursive call. We can rewrite `factorial` like so:
-
-```lean
-def factorial (t : Nat) : Nat :=
-  Nat.rec 1 (fun n prev => (n + 1) * prev) t
-
-#eval factorial 5  /- still 120 -/
-```
-Notice how this definition does not involve any recursive call at all! By taking the existence of these recursors as an axiom, this approach sidesteps the need to get fixed points with something like the Y-combinator. In fact, _all_ recursion in lean is based on this principle, which is known as **structural recursion**. Under the hood, our recursive call got rewritten to be a call to `Nat.rec`. Additionally, since the inputs must get smaller at each step, all recursion in lean is garaunteed to terminate eventually. If you want to write a function that does not terminate, you must explicitly annotate the function as `partial`, but then you would not be able to use it in any proofs.
-
-Another thing to note: consider the case where the universe level `u` is 0, so we have `{motive : Nat → Prop}` in the recursor `Nat.rec`. In this case, the type of `Nat.rec` corresponds exactly to the principle of induction on the natural numbers! I draw this parallel because I want to remind you of an important fact that you may be familiar with: induction implies strong induction. Thus, using a similar trick, we are able to define recursive functions like `fib`, which depends on both `fib (n - 1)` and `fib n` in order to calculate `fib (n + 1)`.
-
-```lean
-def fib (t : Nat) : Nat :=
-  match t with
-  | 0 => 1
-  | n+1 => fib (n - 1) + fib n
-
-def fib₂ (t : Nat) : Nat × Nat :=
-  Nat.rec ⟨1, 1⟩ (fun _ prev => ⟨prev.snd, prev.fst + prev.snd⟩) t
-
-#eval fib 6         /- 21 -/
-#eval (fib₂ 6).snd  /- 21 -/
-```
-
-In fact, we have a much more general trick: any algorithm that provably terminates can be written as a structural recursion. Lean's `WellFounded.fix` function does exactly this, turning a proof of termination into a structural recursion that actually computes the function. Honestly, I haven't looked deeply into how it works, but the general idea is that if we show the arguments are monotonically decreasing with respect to a well-founded partial order, we are able to show termination and thus perform structural recursion. Lean has a lot of magic and automation so we don't often have to worry about this.
-
-We will come back and do more math with the natural numbers when we are ready, but first let us round out our picture of recursive inductive types. Of course, for completeness, the constructor of `List` is what you might expect:
-
-```lean
-inductive List (α : Type u) : Type u where
-  | nil : List α
-  | cons (head : α) (tail : List α) : List α
-```
-
-In general, these inductive types are characterized by the fact that they behave similarly to binary trees: for the type `α`, each constructor is recursive in the sense that it takes as parameters some number `α`s. Nothing is stopping us, however, of being recursive in a fancier way: the constructors are allowed to take in functions ultimately returning `α`. Such a function can be thought of as a set of `α`s indexed by the type of its argument, and this method can be used to define an `α`-constructor that is recursive over infinitely many `α`s. Let's start with a finite example though: take here these two ways to write the type of binary trees, where both of these types are isomorphic:
-
-```lean
-inductive BinTree where
-  | leaf : BinTree
-  | node (left : BinTree) (right : BinTree) : BinTree
-
-inductive BinTree₂ where
-  | leaf : BinTree₂
-  | node (children : Bool → BinTree₂) : BinTree₂
-```
-
-And here are the types of their recursors, which you can verify do essentially the same thing but phrased slightly differently:
-```lean
-axiom BinTree.rec {motive : BinTree → Sort u} (leaf : motive BinTree.leaf)
-  (node : (left right : BinTree) → motive left → motive right → motive (left.node right))
-  (t : BinTree) : motive t
-axiom BinTree₂.rec {motive : BinTree₂ → Sort u} (leaf : motive BinTree₂.leaf)
-  (node : (children : Bool → BinTree₂) → ((a : Bool) → motive (children a))
-          → motive (BinTree₂.node children))
-  (t : BinTree₂) : motive t
-```
-
-As you can see, the types of recursors can start to become very complicated! I will try to give an explanation for how one can derive the type of the recursor from the types of the constructors, but honestly the best way to learn is to play around with it yourself. You should take some time, defining your own inductive types with whacky constructors and reading the type of `Type.rec`. When I was first learning this stuff, I spent a lot of time doing this, and I think you should too. If you want to learn more, you can google for **W-types**, which is the very general way of handling these things in type theory.
-
-Here's my attempt at explaining the rules: say you have a `α`-constructor `c : X₁ → X₂ → ... → α`. Obviously, a constructor for the type `α` must ultimately return a value of that type. The recursor begins with a `motive : α → Type`, and it takes in a parameter for each possible constructor of `α`. For the argument corresponding to `c` (this is called a **minor premise**), we have a function that must take in all the same arguments as `c` and returns some `motive (c x₁ x₂ ...)`. Here, the lowercase `xₙ`s represent the values of the argument in the minor premise for the corresponding `Xₙ`-- this thing is dependently typed. Additionally, if any of the `Xₙ` types is either `α` or a function that ultimately returns `α`, we need to add additional parameters to the minor premise. Let's say `Xₙ` is some type `A₁ → A₂ → ... → α`. To the minor premise, we add a new parameter `Pₙ` with the basically the same types as `Xₙ`, except we replace any occurence of `α` with `motive (xₙ a₁ a₂ ...)` where the `aₙ`s are values of the dependently typed parameters of `Pₙ`. Ok, that explanation might have been entirely unhelpful, so your best bet is probably just to ignore it and play around with this stuff yourself.
-
-<details>
-<summary>
-Ok, got it? Cool. If you're itching for more, know that it can get even more complicated! If, however, your head is hurting or you just don't care, you can freely skip reading these details.
-</summary>
-
-
-Anyways, we can have **nested inductive types** that end up with multiple motives:
-
-```lean
-inductive ONat where
-  | mk : Option ONat → ONat
-```
-
-```lean
-axiom ONat.rec {motive_1 : ONat → Sort u} {motive_2 : Option ONat → Sort u}
-  (mk : (a : Option ONat) → motive_2 a → motive_1 (ONat.mk a))
-  (none : motive_2 none)
-  (some : (val : ONat) → motive_1 val → motive_2 (some val))
-  (t : ONat) : motive_1 t
-```
-
-This type is clearly the same as our original definition of the natural numbers, where `ONat.mk none` is `Nat.zero` and `ONat.mk (some n)` is `Nat.succ n`. Can you make sense of what is happening with the recursor, and why it should ultimately be equivalent to `Nat.rec`?
-
-Under the hood, nested inductive types are rewritten to be two _mutual recursive_ inductive types. One can imagine that this is what's happening:
-
-```lean
-mutual
-  inductive ONat where
-  | mk : OptionONat → ONat
-
-  inductive OptionONat where
-  | none : OptionONat
-  | some : ONat → OptionONat
-end
-```
-
-Here, `OptionONat` would have the following recursor:
-```lean
-axiom OptionONat.rec {motive_1 : ONat → Sort u} {motive_2 : OptionONat → Sort u}
-  (mk : (a : OptionONat) → motive_2 a → motive_1 (ONat.mk a))
-  (none : motive_2 OptionONat.none)
-  (some : (a : ONat) → motive_1 a → motive_2 (OptionONat.some a))
-  (t : OptionONat) : motive_2 t
-```
-
-We can see it has essentially the same minor premises as `ONat`'s recursor, but it takes a **major premise** of type `t : OptionONat` instead of `t : ONat` and returns a `motive_2 t` instead of a `motive_1 t`. Can you see how the rules for coming up with a recursor's type can be extended to mutually recursive types? Notice how we get a minor premise for each constructor of every type in the `mutual` block, and notice how any appearance of `ONat` in any constructor triggers an appearance of a `motive_1 ...` parameter, and how any appearance of `OptionONat` in any constructor triggers the appearance of a `motive_2 ...` parameter. Also, notice how the two motives' universe levels are not independent: they both must live in the same universe level `Sort u`.
-
-</details>
-
-
-Alright, one final word before we move on. There is a very important rule that all constructors of all inductive types must follow: **strict positivity**. Let's say we have some inductive type `α` with a constructor `c : X₁ → X₂ → ... → α`. You might have noticed that we restricted ourselves to discussion only the cases where the `Xₙ` types are either:
-
-1. Entirely unrelated to `α` (not recursive),
-2. Just the `α` type itself,
-3. A function that returns `α`, or
-4. An inductive type with `α` as a parameter (discussed in the collapsable section above).
-
-Notably missing from this list is the case where `Xₙ` is a function type that takes `α` as a parameter, and that is for good reason. In type theory lingo, we would say that `α` has appeared in a non-positive position, and allowing such an occurence leads to a logical paradox:
-
-```lean
-inductive Nonpositive : Type
-| mk : (Nonpositive → False) → Nonpositive
-
-def selfApply (b : Nonpositive) : False := 
-  match b with
-  | .mk f => f b
-
-def val : Nonpositive := Nonpositive.mk selfApply
-def falsehood : False := selfApply val
-```
-
-We have proven `False`! The core issue is that by allowing nonpositive occurences, we have sneakily opened the door to infinite recursion. Computationally, `Nonpositive.mk selfApply` is an infinite loop. As you'd hope for a proof assistant aiming to have a sound type system, lean will reject the code above with the helpful message "'Nonpositive.mk' has a non positive occurrence of the datatypes being declared".
-
-
-# Other Topics
-
-## Typeclasses
-
-
-## Other Language features
+See you next time!
 
