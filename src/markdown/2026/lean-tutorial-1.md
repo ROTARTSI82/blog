@@ -30,7 +30,7 @@ def hello : String := "world"
 def luckyNumber (s : String) (n : Nat) : String :=
   s ++ " has a lucky number of " ++ (toString n)
 ```
-Here, we are using the builtin types of strings and natural numbers, which have concrete, computable values. Lean is a programming language with a working code generator, and we can compile this function into executable machine code that would do what you'd expect. Like Haskell, we write function calls without parenthesis (i.e. `toString n`), and we use the `++` operator to concatenate strings and lists. The keyword `def` is used defining both functions and constants, and we can both `#check` the type of an expression and `#eval` its value:
+Here, we are using the builtin types of strings and natural numbers, which have concrete, computable values. Lean is a programming language with a working code generator, and we can compile this function into executable machine code that would do what you'd expect. Like Haskell, we write function calls without parenthesis (i.e. `toString n`), and we use the `++` operator to concatenate strings and lists. The keyword `def` is used to define both functions and constants, and we can both `#check` the type of an expression and `#eval` its value:
 
 ```lean
 #check luckyNumber
@@ -50,7 +50,7 @@ Note the **currying** that is happening here: we should interpret `luckyNumber` 
 /- "Dido has a lucky number of 2" -/
 ```
 
-Of course, lean also has lambda expressions, so you can rephrase the definition of `luckyNumber` is several equivalent ways:
+Of course, lean also has lambda expressions, so you can rephrase the definition of `luckyNumber` in several equivalent ways:
 ```lean
 def luckyNumber : String → Nat → String :=
   fun s n => s ++ " has a lucky number of " ++ (toString n)
@@ -72,7 +72,7 @@ Let me point us to something a little profound: everything in lean has a type, i
 #check Nat  /- Nat : Type -/
 ```
 
-In fact, we have an infinite hierarchy of **type universes**: the type `Type` itself is a term of `Type 1`, and then we have `Type 1 : Type 2`, `Type 2 : Type 3`, and so on. This is because having `Type : Type` would lead to paradoxes, similar to how having a set of all sets leads to Russel's Paradox-- does the set of all sets that do not contain themselves contain itself? The type theory version of this is called Girards Paradox, but we will avoid dealing with all this complexity for now. Let's restrict ourselves mostly to the basic `Type` universe, and take a look at an example of a function acting on `Type`s:
+In fact, we have an infinite hierarchy of **type universes**: the type `Type` itself is a term of `Type 1`, and then we have `Type 1 : Type 2`, `Type 2 : Type 3`, and so on. This is because having `Type : Type` would lead to paradoxes, similar to how having a set of all sets leads to Russell's Paradox-- does the set of all sets that do not contain themselves contain itself? The type theory version of this is called Girard's Paradox, but we will avoid dealing with all this complexity for now. Let's restrict ourselves mostly to the basic `Type` universe, and take a look at an example of a function acting on `Type`s:
 
 
 ```lean
@@ -98,7 +98,7 @@ def reverseList (α : Type) (input : List α) : List α :=
 
 Notice how `α` (typed as `\alpha`) appears on the left side of the `:` in the first parameter, but then it appears on the right side as an argument passed into `List` in the following parameter!
 
-This is actually very idiomatic lean-- where other languages have to rely on generics, templates, or metaprogramming, lean can use normal (albiet dependently-typed) functions. There are several new features to cover here. We are recursively reversing a linked list using **pattern matching**: we return the empty list if our input is empty, and otherwise we take the first element `x` and append it to the end after reversing the list of remaining elements `xs`. Pattern matching can be used on any **inductive type**, and many of the examples we've seen so far (`List α`, `String`, and `Nat`) are all inductive types.
+This is actually very idiomatic lean-- where other languages have to rely on generics, templates, or metaprogramming, lean can use normal (albeit dependently-typed) functions. There are several new features to cover here. We are recursively reversing a linked list using **pattern matching**: we return the empty list if our input is empty, and otherwise we take the first element `x` and append it to the end after reversing the list of remaining elements `xs`. Pattern matching can be used on any **inductive type**, and many of the examples we've seen so far (`List α`, `String`, and `Nat`) are all inductive types.
 
 With this, you have actually met every single basic building block in lean: dependent function types, type universes, and inductive types! Essentially everything you encounter in lean will ultimately be made up of these three building blocks if you keep drilling down, so you should make sure to understand them well. Actually, I am slightly lying because quotient types are a bit of an edge case, but my claim about these three essential building blocks is essentially correct. If you want, you can read this footnote,[^1] but you can think of these as the three most fundamental things, the irreducible atoms of lean.
 
@@ -157,7 +157,7 @@ def toHexCode (c : Color) : String :=
 /- or, equivalently, -/
   @Color.rec (fun _ => String) "ff0000" "00ff00" "0000ff" c
 ```
-Much of the complexity of the recursor's type simply comes from the fact that we need to handle all possible dependent typings. The `motive` parameter is how we do it, as it will tell us how the return type depends on the value we are matching on. In our call to `rec`, our motive `fun _ => String` is simply a function that ignores its input and returns the `String` type. Thus, `motive Color.red`, `motive Color.green`, and `motive Color.blue` all just evaluate to `String`, and all the different branches of our `match` will have the same type. Then, the rest of the parameters give the values of each subcase/arm of the `match`, and finally one supplies the value to match on. In the general case, thouguh, the recursor must account for the possibility that these branches are all of different types!
+Much of the complexity of the recursor's type simply comes from the fact that we need to handle all possible dependent typings. The `motive` parameter is how we do it, as it will tell us how the return type depends on the value we are matching on. In our call to `rec`, our motive `fun _ => String` is simply a function that ignores its input and returns the `String` type. Thus, `motive Color.red`, `motive Color.green`, and `motive Color.blue` all just evaluate to `String`, and all the different branches of our `match` will have the same type. Then, the rest of the parameters give the values of each subcase/arm of the `match`, and finally one supplies the value to match on. In the general case, though, the recursor must account for the possibility that these branches are all of different types!
 
 Now, those two definitions are equal in theory, but in practice, `Color.rec` will not generate any executable code, and so lean will require that you mark this as a `noncomputable def`, and you will not be able to `#eval` it. This is just a random restriction around recursors in the current version of lean's code generator, though, and the `match` version will evaluate perfectly fine:
 
@@ -170,15 +170,15 @@ Now, those two definitions are equal in theory, but in practice, `Color.rec` wil
 Just for fun, here is a more complicated example that utilizes dependent types. Can you make sense of what is happening here?
 
 ```lean
-def foo := @Color.rec (@Color.rec (fun _ => Type) String Nat Bool) "abc" 123 True Color.red
+def foo := @Color.rec (@Color.rec (fun _ => Type) String Nat Bool) "abc" 123 true Color.red
 ```
 
 Now, let's take a bit of a step up and look at some examples of slightly more complicated inductive types. We begin with the classic `Option` monad, also known as `Maybe` in Haskell.
 
 ```lean
 inductive Option (α : Type) : Type where
-| some : α → Option α
 | none : Option α
+| some : α → Option α
 ```
 
 Notice here that `Option` is a function `Type → Type` just like `List`, defining a whole type family! Our `inductive` declarations can take parameters in the same way that `def` declarations can. Additionally, our `Option.some : α → Option α` constructor is also a function that takes in an argument. This is what allows our type to hold data that we can match against. Take a look at the constructors and the recursor for `Option`. Can you make sense of what is happening?
@@ -233,7 +233,7 @@ def funFunction (x : Nat ⊕ Int) : Nat :=
 #eval funFunction (Sum.inr (-5))  /- 5  -/
 ```
 
-Can you figure out what the type of Sum's recursor must be? You can check your work with `#check Sum`.
+Can you figure out what the type of Sum's recursor must be? You can check your work with `#check Sum.rec`, or `#print Sum.rec`.
 
 Now that we've met the sum, of course we need to meet the dual notion of the product! Switch your colimit for a limit, and you get this guy:
 
@@ -289,7 +289,7 @@ structure Sigma {α : Type} (β : α → Type) where
     snd : β fst
 ```
 
-Confusingly, this type is called the Sigma (Σ, `\Sigma`) type despite being a product! This is because it is paired with the _dependent function type_, which is also called Pi (Π, `\Pi`). I suppose there is some sort of duality going on there where the Sigma type is actually the coproduct, but I dunno. ¯\\_(ツ)_/¯
+Confusingly, this type is called the Sigma (Σ, `\Sigma`) type despite being analogous to the Cartesian product! This is because it is paired with the _dependent function type_, which is also called Pi (Π, `\Pi`). I suppose there is some category where the Sigma type is actually the coproduct, but I dunno. ¯\\_(ツ)_/¯
 
 Similar to how one could write a dependent function as `(a : α) → β a`, you can write `Sigma β` as `Σ(a : α), β a`.
 
@@ -313,9 +313,9 @@ This is the equivalent of the empty set, and this one is a bit weird. In particu
 axiom Empty.rec (motive : Empty → Type) (t : Empty) : motive t
 ```
 
-We have no constructors, so we have no cases at all to take care of in our match statement. However, this is a bit bizzare: given some `t : Empty`, we can use an empty `match` statement to construct quite literally anything we'd like without providing any definitions at all! In reality, this is completely fine as it is impossible to get a term of an empty type-- the type is empty after all (in fancier words, we say it is **uninhabited**). Rust fans might recognize this as the `Never` type, also spelled as `!`. This recursor is exactly why the `!` type can be coerced into any other type whatsoever: it is the initial object in our category. It is perfectly acceptable to define a function `Empty → α` for any type `α` without providing a definition because it will be impossible to call that function anyways. If you want a more formal, mathematical treatment, read this footnote.[^2]
+We have no constructors, so we have no cases at all to take care of in our match statement. However, this is a bit bizarre: given some `t : Empty`, we can use an empty `match` statement to construct quite literally anything we'd like without providing any definitions at all! In reality, this is completely fine as it is impossible to get a term of an empty type-- the type is empty after all (in fancier words, we say it is **uninhabited**). Rust fans might recognize this as the `Never` type, also spelled as `!`. This recursor is exactly why the `!` type can be coerced into any other type whatsoever: it is the initial object in our category. It is perfectly acceptable to define a function `Empty → α` for any type `α` without providing a definition because it will be impossible to call that function anyways. If you want a more formal, mathematical treatment, read this footnote.[^2]
 
-[^2]: We can define a function $f : A \to B$ as a subset $f \subseteq A \times B$ such that $$\forall a \in A, \exists! b \in B, (a, b) \in f$$. If $A = \varnothing$, then the outermost $\forall$ quantifier is vacously satisfied, and $f \subseteq \varnothing \times B$ so $f = \varnothing$. Thus, formally, the empty function is considered a valid function $\varnothing \to B$, and so $\varnothing \in \text{Hom}(\varnothing, B)$.
+[^2]: We can define a function $f : A \to B$ as a subset $f \subseteq A \times B$ such that $$\forall a \in A, \exists! b \in B, (a, b) \in f$$. If $A = \varnothing$, then the outermost $\forall$ quantifier is vacuously satisfied, and $f \subseteq \varnothing \times B$ so $f = \varnothing$. Thus, formally, the empty function is considered a valid function $\varnothing \to B$, and so $\varnothing \in \text{Hom}(\varnothing, B)$.
 
 ```lean
 def absurdity {α : Type} : Empty → α := fun e ↦ nomatch e
@@ -362,7 +362,7 @@ Finally, universal quantifiers can be handled using dependent function types, an
 
 Actually, this table is a bit of a lie, because those types I've shown live in the wrong universe! Those types all live in the `Type` universe, but in practice, propositions should live in a special `Prop` universe. This universe is smaller than `Type`, and it lives at the bottom of the universe hierarchy, so we can write `Prop : Type`. This is how lean implements something called **proof irrelevance**: once a proposition is proven, lean would like to stop keeping track of how exactly the proof was obtained. The only thing that matters is that we have a proof of the proposition or that we have a term of the type-- we do not have to keep track in excruciating detail of exactly which type constructors were used.
 
-Thus, types that live in this `Prop` universe are allowed at most one term, meaning that if `P : Prop` and we have two terms `x y : P`, we are garuanteed to have `x = y` definitionally. The types are truncated, and spiritually every type in `Prop` must be either an empty type or a singleton like the unit type. As a result of this, the `Prop` universe has a few very weird properties, but we will come back and cover it in more detail when we talk about type universes. For now, we can define inductive types that live in this universe by writing `: Prop` instead of `: Type` in our declarations:
+Thus, types that live in this `Prop` universe are allowed at most one term, meaning that if `P : Prop` and we have two terms `x y : P`, we are guaranteed to have `x = y` definitionally. The types are truncated, and spiritually every type in `Prop` must be either an empty type or a singleton like the unit type. As a result of this, the `Prop` universe has a few very weird properties, but we will come back and cover it in more detail when we talk about type universes. For now, we can define inductive types that live in this universe by writing `: Prop` instead of `: Type` in our declarations:
 
 ```lean
 structure And (a b : Prop) : Prop where
@@ -378,7 +378,7 @@ infixr:35 unicode(" ∧ ", " /\\ ") => And
 infixr:30 unicode(" ∨ ", " \\/ ") => Or
 ```
 
-And just as one could write `α ⊕ β` for `Sum α β`, one could write `a ∧ b` (`a \or b`) for `And a b`. We also have a `Prop` counterpart for the `Sigma` type: just as we could write `Sigma β` and `Σ(a : α), β a`, we can write `Exists p` and `∃(a : α), p a`:
+And just as one could write `α ⊕ β` for `Sum α β`, one could write `a ∧ b` (`a \and b`) for `And a b`. We also have a `Prop` counterpart for the `Sigma` type: just as we could write `Sigma β` and `Σ(a : α), β a`, we can write `Exists p` and `∃(a : α), p a`:
 
 ```lean
 inductive Exists {α : Type} (p : α → Prop) : Prop where
@@ -413,7 +413,7 @@ theorem demorgans {P Q : Prop} (h : ¬P ∧ ¬Q) : ¬(P ∨ Q) :=
     | .inr hq => h.right hq
 ```
 
-A few new things are happening here. The keyword `theorem` behaves identically to `def`, except that it can only be used to define a symobl whose type lives in the `Prop` universe (whereas `def` works for any universe). In our case, the symbol `demorgans` has a type of `∀ {P Q : Prop}, ¬P ∧ ¬Q → ¬(P ∨ Q)`, which is indeed a proposition.
+A few new things are happening here. The keyword `theorem` behaves identically to `def`, except that it can only be used to define a symbol whose type lives in the `Prop` universe (whereas `def` works for any universe). In our case, the symbol `demorgans` has a type of `∀ {P Q : Prop}, ¬P ∧ ¬Q → ¬(P ∨ Q)`, which is indeed a proposition.
 
 To prove this proposition, we are quite literally defining a function that returns a proof of `¬(P ∨ Q)` given a proof `h` of `¬P ∧ ¬Q`. Recall that `¬X` is defined as the function type `X → False`, and note that our hypothesis `h` is a tuple where the first element is a function `P → False` and the second element is a function `Q → False`. To prove our conclusion `¬(P ∨ Q)`, we give a function that takes in a proof `hc` of `P ∨ Q` and derives a contradiction `False`. Since `hc` is an inductive type, we can pattern match on the constructors of `Or`. If `hc` contains a proof of `P`, we can use the first element of `h` (which proves `¬P`) to derive a contradiction, using a normal function application. Similarly, if `hc` is a proof of `Q`, we use the second element of `h`. 
 
@@ -427,7 +427,7 @@ theorem demorgans {P Q : Prop} (h : ¬P ∧ ¬Q) : ¬(P ∨ Q) := by
   · exact h.right hq
 ```
 
-Here, we have used the tactics `intro`, `rcases`, and `exact`, which you should think of as small programs that can be used to automatically synthesize terms of some type. If you hover your cursor directly after the `by`, in your InfoView you should see something like this:
+Here, we have used the tactics `intro`, `rcases`, and `exact`, which you should think of as small programs that can be used to automatically synthesize terms of some type. (This is somewhat beside the point, but note that the `rcases` tactic is defined in `Mathlib`, so you will have to `import Mathlib` before you can use it.) Anyways, if you hover your cursor directly after the `by`, in your InfoView you should see something like this:
 
 ```lean
 P Q : Prop
@@ -479,7 +479,7 @@ Using `refine`, we can provide a partially constructed term, but we are also all
 
 That about covers it for tactic mode! Of course, there are a ton of tactics in lean, but having seen this pattern, you should be well-equipped to make sense of any new tactic you encounter. Every tactic is simply a way of manipulating the list of hypotheses, the goal state, or both.
 
-Now finally, I have one last word about this `demorgans` example. You might notice that if you try to prove the converse, that $\lnot (P \lor Q) \implies \lnot P \land \lnot Q$, you get a bit stuck. Try it and see what happens!
+Now finally, I have one last word about this `demorgans` example. I draw your attention to the fact that de Morgan's identities consist of four implications that must be proven. We have just proven one, and the converse of that a fun exercise for the reader. Similarly, $\lnot P \lor \lnot Q \implies \lnot(P \land Q)$ can be proven pretty easily too, but if you try to prove the converse of that one, you will find yourself stuck. Try it and see what happens!
 
 This is because so far, all the methods of proof I've shown have been **constructive**, but that statement cannot be proven constructively. I'm no expert in this stuff (wth is intuitionism?) but bear with me. What I mean by this is that the proof of the converse relies on the **law of the excluded middle**, that $P \lor \lnot P$ for all propositions $P$. However, this proof is impossible to _construct_ without knowing what $P$ is, since we _must_ construct either a proof of $P$ or a proof that assuming $P$ leads to a contradiction. We cannot appeal to anything external, and we are stuck.
 

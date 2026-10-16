@@ -21,8 +21,8 @@ Finally it is time to address this detail that I have been glossing over: type u
 2. Given some $X : \mathcal{U}_i$ and some $Y : \mathcal{U}_j$, we can form a function type $(X \to Y) : \mathcal{U}_{\max(i, j)}$.
 3. Given any $X : \mathcal{U}_i$ and a function $\beta : X \to \mathcal{U}_j$, we can form a dependent function type $((x : X) \to \beta\;x) : \mathcal{U}_{\max(i,j)}$.
     - Using a different notation for the `Pi` type, you sometimes might see this written as $\left(\prod\limits_{x : X} \beta\;x\right) : \mathcal{U}_{\max(i,j)}$.
-4. We can form an inductive type $I : \mathcal{U}_i$ if across all of its constructors, every "real" parameter has a type whose universe level is $\mathcal{U}_i$ or smaller. This is the only rule that let's you "skip" universe levels!
-    - What do I mean by "real" parameter? I mean everything except _indices_ and _parameters of the inductive type family_ itself. We will have a fuller definition for what those are later, but for now let's work through the example of the product type `Prod`, which can have the type $\times : \mathcal{U}_i \to \mathcal{U}_j \to \mathcal{U}_{\max(i,j)}$. Mathematically, we are thinking of $(\times)$ as a type family defining a new inductive type $\alpha \times \beta : \mathcal{U}_{\max(i,j)}$ for each pair of types $\alpha : \mathcal{U}_i$ and $\beta : \mathcal{U}_{j}$. Then, we do not think of a single constructor with type
+4. We can form an inductive type $I : \mathcal{U}_i$ if across all of its constructors, every constructor argument has a type whose universe level is $\mathcal{U}_i$ or smaller. This is the only rule that lets you "skip" universe levels!
+    - When I say "constructor argument", I specifically exclude _indices_ and _parameters of the inductive type family_ itself. We will have a fuller understanding for what those are later, but for now let's work through the example of the product type `Prod`, which can have the type $\times : \mathcal{U}_i \to \mathcal{U}_j \to \mathcal{U}_{\max(i,j)}$. Mathematically, we are thinking of $(\times)$ as a type family defining a new inductive type $\alpha \times \beta : \mathcal{U}_{\max(i,j)}$ for each pair of types $\alpha : \mathcal{U}_i$ and $\beta : \mathcal{U}_{j}$. Then, we do not think of a single constructor with type
       $$
       (\times)\mathrm{.mk} : \{\alpha : \mathcal{U}_i\} \to \{\beta : \mathcal{U}_j\} \to \alpha \to \beta \to \alpha \times \beta,
       $$
@@ -30,7 +30,7 @@ Finally it is time to address this detail that I have been glossing over: type u
       $$
       (\alpha \times \beta)\mathrm{.mk} : \alpha \to \beta \to \alpha \times \beta.
       $$
-      Thus, the values $\alpha$ (which has type $\mathcal{U}_i : \mathcal{U}_{i+1}$) and $\beta$ (which is a $\mathcal{U}_j : \mathcal{U}_{j+1}$) are not a parameters of the constructor $(\times)\mathrm{.mk}$. Instead, they are parameters of the type family $(\times)$. Then, we see it will be valid to have $\alpha\times\beta : \mathcal{U}_{\max(i,j)}$ since for all $\alpha$ and $\beta$, the types of the arguments to $(\alpha \times\beta)\mathrm{.mk}$ all live in universes less than or equal to $\mathcal{U}_{\max(i,j)}$. If, instead, we had erroneously counted the implicit parameters in $(\times)\mathrm{.mk}$, we would have arrived at the conclusion that $\alpha\times\beta$ must live in a universe at least as big as $\mathcal{U}_{\max(i,j)+1}$, which is not correct!
+      Thus, the values $\alpha$ (which has type $\mathcal{U}_i : \mathcal{U}_{i+1}$) and $\beta$ (which is a $\mathcal{U}_j : \mathcal{U}_{j+1}$) are not counted as arguments of some constructor $(\times)\mathrm{.mk}$. Instead, they are parameters of the type family $(\times)$. Then, we see it will be valid to have $\alpha\times\beta : \mathcal{U}_{\max(i,j)}$ since for all $\alpha$ and $\beta$, the types of the arguments to $(\alpha \times\beta)\mathrm{.mk}$ all live in universes less than or equal to $\mathcal{U}_{\max(i,j)}$. If, instead, we had erroneously counted the implicit parameters in $(\times)\mathrm{.mk}$, we would have arrived at the conclusion that $\alpha\times\beta$ must live in a universe at least as big as $\mathcal{U}_{\max(i,j)+1}$, which is not correct!
 
 
 These rules can be pretty confusing, so make sure to play around with `#check`ing universe levels yourself. The tricky part in doing this is that we are often talking about the universe level of the type of a some value, which might be somewhat unfamiliar. You've got multiple levels of types!
@@ -44,7 +44,7 @@ But wait-- these rules we've seen so far only apply for the normal type universe
 
 Try to interpret the special rules for the `Prop` universe. What are they telling us, and why do we need them?
 
-In lean, we have the ability to declare _universe variables_, whhich we conventionally name `u`, `v`, etc. You can declare type universe variables with a `universe` statement and use them like so:
+In lean, we have the ability to declare _universe variables_, which we conventionally name `u`, `v`, etc. You can declare type universe variables with a `universe` statement and use them like so:
 ```lean
 universe u v
 
@@ -58,7 +58,7 @@ def Hom (X : Type u) (Y : Type v) : Type (max u v) :=
 
 Notice how our definition is now written `Hom.{u, v}`, indicating that it is **polymorphic over universes**. It looks a lot like we have added two extra parameters, even if they use this funky syntax. However, a word of caution: even though these look a lot like the natural numbers `Nat`, they are something completely different! They are not objects within lean's type theory, but rather part of the metatheory. They are just a systematic way to refer to universes within the hierarchy, and they just as well could have been called `UniverseOne : UniverseTwo`, `UniverseTwo : UniverseThree`, etc. Although we are allowed to think of `List` as a literal function `Type u → Type u`, we are explicitly not allowed to think of `Type` or `Sort` as functions like `Nat → Type ∞`. There is no such thing as `Type ∞`, and universe indices are not natural numbers.
 
-Another detail I want to draw your attention to is how we have defined `Hom` to work only on `Type`s and not general `Sort`s. Think back to how the `Prop` universe (aka. `Sort 0`) behaves like an edge case: if we had `Sort u → Sort 0`, this function type will live in `Sort 0` and not `Sort (max u 0)`. Luckily, lean provides a special function `imax` designed specifically to handle this situation. The 'i' in `imax` stands for _impredicative_, and the function is defined like so:
+Another detail I want to draw your attention to is how we have defined `Hom` to work only on `Type`s and not general `Sort`s. Think back to how the `Prop` universe (aka. `Sort 0`) behaves like an edge case: if we had some `X : Sort u` and some `Y : Sort 0`, the function type `X → Y` will live in `Sort 0` and not `Sort (max u 0)`. Luckily, lean provides a special function `imax` designed specifically to handle this situation. The 'i' in `imax` stands for _impredicative_, and the function is defined like so:
 $$
 \mathrm{imax}(u, v) = \begin{cases}0 & \text{if } v = 0 \\ \max(u, v) & \text{otherwise}\end{cases}
 $$
@@ -97,7 +97,7 @@ To resolve this problem, the approach that lean chooses is to make available the
 axiom Exists.choose {α : Sort u} (h : ∃(a : α), True) : α
 ```
 
-Ok, I must admit that I am lying just a little: the real `Classical.choice` axiom in lean is phrased slightly differently, but it is logically equivalent to doing it like this. Note that the `axiom` keyword behaves similarly to `def` or `theorem` in that it introduces a symbol with a given type, but it does not require you to provide any definition or proof. The symbol (which can act as the proof of some mathematical statement) is just taken be defined axiomatically. This axiom says that given a proof that some value of type `α` must exist, then I must be able to construct a real term of the type `α`. Philosophically, we can understand that this axiom is nonconstructive because merely proving that something exists does not necessarily give us an algorithm to actually construct it. Thus, this is a `noncomputable` function.
+Ok, I must admit that I am lying just a little: the real `Classical.choice` axiom in lean is phrased slightly differently, but it is logically equivalent to doing it like this. Note that the `axiom` keyword behaves similarly to `def` or `theorem` in that it introduces a symbol with a given type, but it does not require you to provide any definition or proof. The symbol (which can act as the proof of some mathematical statement) is just taken to be defined axiomatically. This axiom says that given a proof that some value of type `α` must exist, then I must be able to construct a real term of the type `α`. Philosophically, we can understand that this axiom is nonconstructive because merely proving that something exists does not necessarily give us an algorithm to actually construct it. Thus, this is a `noncomputable` function.
 
 If you continue to look at this definition, however, you might notice that this looks exactly like a projection out of the `Exists` type. You should wonder: why can't we just provide a real definition for this function?
 
@@ -132,7 +132,7 @@ inductive Nat where
   | zero : Nat
   | succ : Nat → Nat
 ```
-As you'd expect, you can pattern match on `Nat` like any other inductive type, but because `Nat` is a _recursive_ inductive type, we are able to define _recusrive_ functions like so:
+As you'd expect, you can pattern match on `Nat` like any other inductive type, but because `Nat` is a _recursive_ inductive type, we are able to define _recursive_ functions like so:
 
 ```lean
 def factorial (t : Nat) : Nat :=
@@ -160,7 +160,7 @@ def factorial (t : Nat) : Nat :=
 
 #eval factorial 5  /- still 120 -/
 ```
-Notice how this definition does not involve any recursive call at all! By taking the existence of these recursors as an axiom, this approach sidesteps the need to get fixed points with something like the Y-combinator. In fact, _all_ recursion in lean is based on this principle, which is known as **structural recursion**. Under the hood, our recursive call got rewritten to be a call to `Nat.rec`. Additionally, since the inputs must get smaller at each step, all recursion in lean is garaunteed to terminate eventually. If you want to write a function that does not terminate, you must explicitly annotate the function as `partial`, but then you would not be able to use it in any proofs.
+Notice how this definition does not involve any recursive call at all! By taking the existence of these recursors as an axiom, this approach sidesteps the need to get fixed points with something like the Y-combinator. In fact, _all_ recursion in lean is based on this principle, which is known as **structural recursion**. Under the hood, our recursive call got rewritten to be a call to `Nat.rec`. Additionally, since the inputs must get smaller at each step, all recursion in lean is guaranteed to terminate eventually. If you want to write a function that does not terminate, you must explicitly annotate the function as `partial`, but then you would not be able to use it in any proofs.
 
 Another thing to note: consider the case where the universe level `u` is 0, so we have `{motive : Nat → Prop}` in the recursor `Nat.rec`. In this case, the type of `Nat.rec` corresponds exactly to the principle of induction on the natural numbers! I draw this parallel because I want to remind you of an important fact that you may be familiar with: induction implies strong induction. Thus, using a similar trick, we are able to define recursive functions like `fib`, which depends on both `fib (n - 1)` and `fib n` in order to calculate `fib (n + 1)`.
 
@@ -212,7 +212,7 @@ axiom BinTree₂.rec {motive : BinTree₂ → Sort u} (leaf : motive BinTree₂.
 
 As you can see, the types of recursors can start to become very complicated! I will try to give an explanation for how one can derive the type of the recursor from the types of the constructors, but honestly the best way to learn is to play around with it yourself. You should take some time, defining your own inductive types with whacky constructors and reading the type of `Type.rec`. When I was first learning this stuff, I spent a lot of time doing this, and I think you should too. If you want to learn more, you can google for **W-types**, which is the very general way of handling these things in type theory.
 
-Here's my attempt at explaining the rules: say you have a `α`-constructor `c : X₁ → X₂ → ... → α`. Obviously, a constructor for the type `α` must ultimately return a value of that type. The recursor begins with a `motive : α → Type`, and it takes in a parameter for each possible constructor of `α`. For the argument corresponding to `c` (this is called a **minor premise**), we have a function that must take in all the same arguments as `c` and returns some `motive (c x₁ x₂ ...)`. Here, the lowercase `xₙ`s represent the values of the argument in the minor premise for the corresponding `Xₙ`-- this thing is dependently typed. Additionally, if any of the `Xₙ` types is either `α` or a function that ultimately returns `α`, we need to add additional parameters to the minor premise. Let's say `Xₙ` is some type `A₁ → A₂ → ... → α`. To the minor premise, we add a new parameter `Pₙ` with the basically the same types as `Xₙ`, except we replace any occurence of `α` with `motive (xₙ a₁ a₂ ...)` where the `aₙ`s are values of the dependently typed parameters of `Pₙ`. Ok, that explanation might have been entirely unhelpful, so your best bet is probably just to ignore it and play around with this stuff yourself.
+Here's my attempt at explaining the rules: say you have a `α`-constructor `c : X₁ → X₂ → ... → α`. Obviously, a constructor for the type `α` must ultimately return a value of that type. The recursor begins with a `motive : α → Type`, and it takes in a parameter for each possible constructor of `α`. For the argument corresponding to `c` (this is called a **minor premise**), we have a function that must take in all the same arguments as `c` and returns some `motive (c x₁ x₂ ...)`. Here, the lowercase `xₙ`s represent the values of the argument in the minor premise for the corresponding `Xₙ`-- this thing is dependently typed. Additionally, if any of the `Xₙ` types is either `α` or a function that ultimately returns `α`, we need to add additional parameters to the minor premise. Let's say `Xₙ` is some type `A₁ → A₂ → ... → α`. To the minor premise, we add a new parameter `Pₙ` with the basically the same types as `Xₙ`, except we replace any occurrence of `α` with `motive (xₙ a₁ a₂ ...)` where the `aₙ`s are values of the dependently typed parameters of `Pₙ`. Ok, that explanation might have been entirely unhelpful, so your best bet is probably just to ignore it and play around with this stuff yourself.
 
 <details>
 <summary>
@@ -269,9 +269,9 @@ Alright, one final word before we move on. There is a very important rule that a
 1. Entirely unrelated to `α` (not recursive),
 2. Just the `α` type itself,
 3. A function that returns `α`, or
-4. An inductive type with `α` as a parameter (discussed in the collapsable section above).
+4. An inductive type with `α` as a parameter (discussed in the collapsible section above).
 
-Notably missing from this list is the case where `Xₙ` is a function type that takes `α` as a parameter, and that is for good reason. In type theory lingo, we would say that `α` has appeared in a non-positive position, and allowing such an occurence leads to a logical paradox:
+Notably missing from this list is the case where `Xₙ` is a function type that takes `α` as a parameter, and that is for good reason. In type theory lingo, we would say that `α` has appeared in a non-positive position, and allowing such an occurrence leads to a logical paradox:
 
 ```lean
 inductive Nonpositive : Type
@@ -285,7 +285,7 @@ def val : Nonpositive := Nonpositive.mk selfApply
 def falsehood : False := selfApply val
 ```
 
-We have proven `False`! The core issue is that by allowing nonpositive occurences, we have sneakily opened the door to infinite recursion. Computationally, `Nonpositive.mk selfApply` is an infinite loop. As you'd hope for a proof assistant aiming to have a sound type system, lean will reject the code above with the helpful message "'Nonpositive.mk' has a non positive occurrence of the datatypes being declared".
+We have proven `False`! The core issue is that by allowing nonpositive occurrences, we have sneakily opened the door to infinite recursion. Computationally, `Nonpositive.mk selfApply` is an infinite loop. As you'd hope for a proof assistant aiming to have a sound type system, lean will reject the code above with the helpful message "'Nonpositive.mk' has a non positive occurrence of the datatypes being declared".
 
 
 # Other Topics
