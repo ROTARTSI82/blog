@@ -20,6 +20,9 @@ export default defineConfig({
   outDir: 'public_html/',
   trailingSlash: 'always',
   markdown: {
+    shikiConfig: {
+      theme: 'catppuccin-frappe',
+    },
     processor: unified({
       remarkPlugins: [remarkCustomPlugin, remarkMath, remarkToc],
       rehypePlugins: [
