@@ -1,13 +1,14 @@
-import { visit } from 'unist-util-visit';
+import { visit, SKIP } from 'unist-util-visit';
 import type { Node, Parent } from 'unist';
 import type { Code, Html, Text } from "mdast"
 import { h } from 'hastscript';
 import { toText } from 'hast-util-to-text';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import type { VFile } from 'vfile';
 
 function escapeHtml(str: string): string {
   return str
@@ -19,50 +20,58 @@ function escapeHtml(str: string): string {
 
 // Scaling factor for TikZ diagrams: scales overall dimensions, text labels, and stroke weights
 const TIKZ_SCALE = 1.75;
+const TIKZ_CACHE_DIR = join(process.cwd(), '.tikz-cache');
 
+// \usepackage[opts]{pkgs} and \usetikzlibrary{libs}, which are only legal in the preamble
+const PACKAGE_LOAD = /\\(?:usepackage|usetikzlibrary)\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/g;
+
+// Splits a TikZ block into preamble and body. Blocks may wrap their body in
+// \begin{document}...\end{document}; otherwise the body starts at the first \begin{...}.
+function splitTikzSource(tikzCode: string): { preamble: string, body: string } {
+  // drop whole-line comments so that commented-out package loads don't get hoisted
+  const src = tikzCode
+    .replace(/^\s*%.*$/gm, '')
+    .replace(/\\documentclass\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/, '');
+
+  let preamble = '';
+  let body = src;
+  const docStart = src.indexOf('\\begin{document}');
+  if (docStart >= 0) {
+    preamble = src.slice(0, docStart);
+    body = src.slice(docStart + '\\begin{document}'.length).replace(/\\end\{document\}[\s\S]*$/, '');
+  } else {
+    const envStart = src.search(/\\begin\{/);
+    if (envStart >= 0) {
+      preamble = src.slice(0, envStart);
+      body = src.slice(envStart);
+    }
+  }
+
+  // package loads that ended up in the body (e.g. after \begin{document}) get moved up
+  const hoisted = body.match(PACKAGE_LOAD) ?? [];
+  body = body.replace(PACKAGE_LOAD, '');
+  return { preamble: [preamble, ...hoisted].join('\n'), body };
+}
+
+// Compiles TikZ source to an SVG file in TIKZ_CACHE_DIR and returns its path.
 function renderTikzToSvg(tikzCode: string, scale = TIKZ_SCALE): string {
-  const hash = createHash('sha256').update(`scale:${scale}:${tikzCode}`).digest('hex');
-  const cacheDir = join(process.cwd(), '.tikz-cache');
-  mkdirSync(cacheDir, { recursive: true });
-  const cachePath = join(cacheDir, `${hash}.svg`);
+  // bump the version tag whenever the latex/dvisvgm invocation changes, to invalidate the cache
+  const hash = createHash('sha256').update(`v3:scale:${scale}:${tikzCode}`).digest('hex');
+  mkdirSync(TIKZ_CACHE_DIR, { recursive: true });
+  const cachePath = join(TIKZ_CACHE_DIR, `${hash}.svg`);
 
   if (existsSync(cachePath)) {
-    return readFileSync(cachePath, 'utf-8');
+    return cachePath;
   }
 
-  // Strip explicit \begin{document} and \end{document} if already present
-  const codeWithoutDoc = tikzCode
-    .replace(/\\begin\{document\}/g, '')
-    .replace(/\\end\{document\}/g, '');
-
-  const lines = codeWithoutDoc.trim().split('\n');
-  const preamble: string[] = [];
-  const body: string[] = [];
-
-  for (const line of lines) {
-    const s = line.trim();
-    if (s.startsWith('%') || s.startsWith('\\documentclass')) {
-      continue;
-    }
-    if (
-      s.startsWith('\\usepackage') ||
-      s.startsWith('\\usetikzlibrary') ||
-      s.startsWith('\\pgfplotsset') ||
-      s.startsWith('\\tikzset')
-    ) {
-      preamble.push(line);
-    } else {
-      body.push(line);
-    }
-  }
-
+  const { preamble, body } = splitTikzSource(tikzCode);
   const tex = [
     '\\documentclass[dvisvgm]{standalone}',
     '\\usepackage{tikz}',
     '\\usepackage{amsmath,amssymb}',
-    ...preamble,
+    preamble,
     '\\begin{document}',
-    ...body,
+    body,
     '\\end{document}'
   ].join('\n');
 
@@ -70,42 +79,35 @@ function renderTikzToSvg(tikzCode: string, scale = TIKZ_SCALE): string {
   mkdirSync(workDir, { recursive: true });
 
   try {
-    const texPath = join(workDir, 'diagram.tex');
-    writeFileSync(texPath, tex, 'utf-8');
+    writeFileSync(join(workDir, 'diagram.tex'), tex, 'utf-8');
 
-    const latex = spawnSync('latex', ['-interaction=nonstopmode', 'diagram.tex'], { cwd: workDir });
+    const latex = spawnSync('latex', ['-interaction=nonstopmode', '-halt-on-error', 'diagram.tex'], { cwd: workDir });
     if (latex.status !== 0) {
-      console.error(`[TikZ] latex compilation error for ${hash}:`, latex.stdout?.toString() || latex.stderr?.toString());
+      // only print from the first error onwards; the full log is mostly package loading noise
+      const log = latex.stdout?.toString() || latex.stderr?.toString() || '';
+      const errAt = log.indexOf('\n!');
+      console.error(`[TikZ] latex compilation error for ${hash}:\n${errAt >= 0 ? log.slice(errAt + 1) : log}`);
       throw new Error(`LaTeX compilation failed for diagram ${hash}`);
     }
 
+    // embedding the fonts as WOFF2 keeps text as real text, and comes out smaller than --no-fonts paths
     const dvisvgm = spawnSync('dvisvgm', [
-      '--no-fonts',
+      '--font-format=woff2',
+      '--optimize',
       '--exact-bbox',
       `-Z${scale}`,
       'diagram.dvi',
       '-o',
       'diagram.svg'
     ], { cwd: workDir });
-    if (dvisvgm.status !== 0) {
+    const svgPath = join(workDir, 'diagram.svg');
+    if (dvisvgm.status !== 0 || !existsSync(svgPath)) {
       console.error(`[TikZ] dvisvgm error for ${hash}:`, dvisvgm.stderr?.toString());
       throw new Error(`dvisvgm failed for diagram ${hash}`);
     }
 
-    const svgPath = join(workDir, 'diagram.svg');
-    if (!existsSync(svgPath)) {
-      throw new Error(`dvisvgm did not output SVG for diagram ${hash}`);
-    }
-
-    let svg = readFileSync(svgPath, 'utf-8');
-    // Strip XML declaration and generator comments for inlining
-    svg = svg
-      .replace(/<\?xml[\s\S]*?\?>/, '')
-      .replace(/<!--[\s\S]*?-->/, '')
-      .trim();
-
-    writeFileSync(cachePath, svg, 'utf-8');
-    return svg;
+    copyFileSync(svgPath, cachePath);
+    return cachePath;
   } finally {
     try {
       rmSync(workDir, { recursive: true, force: true });
@@ -116,26 +118,36 @@ function renderTikzToSvg(tikzCode: string, scale = TIKZ_SCALE): string {
 }
 
 export function remarkCustomPlugin() {
-  return (tree: Node) => {
+  return (tree: Node, file: VFile) => {
     visit(tree, 'code', (node: Code, index: number, parent: Parent) => {
-      if (node.lang === 'tikz') {
-        const tikzCode = node.value.split('\n')
-          .map(line => line.trim()).filter(x => x).join('\n');
+      if (node.lang !== 'tikz') return;
 
-        let svgContent = '';
-        try {
-          svgContent = renderTikzToSvg(tikzCode);
-        } catch (err: any) {
-          console.error('[remarkCustomPlugin] Failed to render TikZ diagram:', err.message);
-          svgContent = `<p class="tikz-error text-red-500 font-bold">Failed to compile TikZ diagram</p>`;
-        }
+      const tikzCode = node.value.split('\n')
+        .map(line => line.trim()).filter(x => x).join('\n');
+      const rawTex = `<code class="raw-tex">${escapeHtml(tikzCode)}</code>`;
 
-        const htmlString = `<div class="blog-tikz-done" role="img" aria-label="TikZ Diagram">
-${svgContent}<code class="raw-tex">${escapeHtml(tikzCode)}</code></div>`;
-
-        (node as unknown as Html).type = 'html';
-        node.value = htmlString;
+      let replacement: Node[];
+      try {
+        // emit a regular markdown image pointing at the SVG, relative to the markdown file,
+        // so that Astro's asset pipeline bundles it like any other local image
+        const url = relative(dirname(file.path), renderTikzToSvg(tikzCode));
+        replacement = [
+          { type: 'html', value: '<div class="blog-tikz-done">' } as Html,
+          { type: 'paragraph', children: [{ type: 'image', url, alt: 'TikZ diagram' }] } as Node,
+          { type: 'html', value: `${rawTex}</div>` } as Html,
+        ];
+      } catch (err: any) {
+        console.error('[remarkCustomPlugin] Failed to render TikZ diagram:', err.message);
+        // fail CI builds loudly instead of deploying a broken diagram
+        if (process.env.CI) throw err;
+        replacement = [{
+          type: 'html',
+          value: `<div class="blog-tikz-done"><p class="tikz-error text-red-500 font-bold">Failed to compile TikZ diagram</p>${rawTex}</div>`
+        } as Html];
       }
+
+      parent.children.splice(index, 1, ...replacement);
+      return [SKIP, index + replacement.length];
     });
 
     // This visitor handles turning ==text== into <mark>text</mark>.

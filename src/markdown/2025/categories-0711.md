@@ -351,11 +351,11 @@ Let's make sense of this commutative diagram from the category theory definition
 	{T^3(X)} && {T^2(X)} && {T(X)} && {T^2(X)} \\
 	\\
 	{T^2(X)} && {T(X)} && {T^2(X)} && {T(X)}
-	\arrow["{T(\mu_X)}", from=1-1, to=1-3]
-	\arrow["{\mu_{T(X)}}"', from=1-1, to=3-1]
+	\arrow["{T\left(\mu_X\right)}", from=1-1, to=1-3]
+	\arrow["{\mu_{T\left(X\right)}}"', from=1-1, to=3-1]
 	\arrow["{\mu_X}", from=1-3, to=3-3]
-	\arrow["{T(\eta_X)}", from=1-5, to=1-7]
-	\arrow["{\eta_{T(X)}}"', from=1-5, to=3-5]
+	\arrow["{T\left(\eta_X\right)}", from=1-5, to=1-7]
+	\arrow["{\eta_{T\left(X\right)}}"', from=1-5, to=3-5]
 	\arrow[equals, from=1-5, to=3-7]
 	\arrow["{\mu_X}", from=1-7, to=3-7]
 	\arrow["{\mu_X}"', from=3-1, to=3-3]

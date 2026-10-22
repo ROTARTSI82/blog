@@ -22,14 +22,8 @@ jobs:
       - run: bun -v
       - run: node -v
       - name: Install TeX dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-extra texlive-pictures texlive-science dvisvgm
-      - name: Cache TikZ SVGs
-        uses: actions/cache@v4
-        with:
-          path: .tikz-cache
-          key: ${{ runner.os }}-tikz-${{ hashFiles('src/markdown/**/*.md') }}
-          restore-keys: |
-            ${{ runner.os }}-tikz-
+        # texlive-plain-generic provides simplekv.tex, which chemfig (texlive-pictures) needs but doesn't depend on
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-extra texlive-pictures texlive-science texlive-plain-generic dvisvgm
       - run: bun install
       - run: bun run build
       - run: mkdir ~/.ssh
