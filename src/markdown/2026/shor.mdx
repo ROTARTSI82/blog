@@ -216,7 +216,7 @@ As it's unitary, we can implement it efficiently on a Quantum Computer with a ci
 $$
 \mathrm{DFT}(x_K)_{(nK/r)}=\frac{1}{\sqrt{K}}\sum_{i=0}^{K-1}x_ie^{-2\pi j in/r}=\frac{1}{\sqrt{K}}\sum_{m=0}^{K/r-1}e^{-2\pi jn(mr+b)/r}=\frac{1}{\sqrt{K}}e^{-2\pi j n b/r}\sum_{m=0}^{K/r-1}e^{-2\pi jnm}=\frac{\sqrt{K}}{r}e^{-2\pi j n b/r},
 $$
-as $e^{-2\pi jnm}=1$ for integer $n,m,$ and this has a squared norm of $\frac{K}{r^2}.$ I claim that the squared norm of these components is pretty damn large compared to average squared norm overover  all the components, which will be important soon.
+as $e^{-2\pi jnm}=1$ for integer $n,m,$ and this has a squared norm of $\frac{K}{r^2}.$ I claim that the squared norm of these components is pretty damn large compared to average squared norm over  all the components, which will be important soon.
 
 Noting that the DFT is unitary, we can conclude that $\Vert \mathrm{DFT}(x_K)\Vert=\Vert x_K\Vert\approx\sqrt{\frac{K}{r}},$ as approximately $1/r$th of the components are one, while the rest are zero. The equivalence between the 2-norm of a vector and the 2-norm of its DFT is very important in signal processing, and it's know as the Parseval-Plancherel theorem. Trying to prove this from the definition of the DFT takes some work, but for us it falls right out of the unitaritiness of the DFT.
 
