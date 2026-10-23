@@ -19,17 +19,23 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - run: bun -v
-      - run: node -v
+      - run: |
+          bun -v
+          node -v
       - name: Install TeX dependencies
         # texlive-plain-generic provides simplekv.tex, which chemfig (texlive-pictures) needs but doesn't depend on
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-extra texlive-pictures texlive-science texlive-plain-generic dvisvgm
-      - run: bun install
-      - run: bun run build
-      - run: mkdir ~/.ssh
-      - run: ssh-keyscan granty29.vergil.u.washington.edu >> ~/.ssh/known_hosts
-      - run: echo "${{ secrets.PUB_DEPLOY_KEY }}" > ~/.ssh/id_rsa.pub
-      - run: touch ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa && echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
-      - run: rsync -aimPz public_html/ granty29@granty29.vergil.u.washington.edu:~/public_html/
+      - run: |
+          bun install
+          bun run build
+      - run: |
+          mkdir ~/.ssh
+          ssh-keyscan granty29.vergil.u.washington.edu >> ~/.ssh/known_hosts
+          echo "${{ secrets.PUB_DEPLOY_KEY }}" > ~/.ssh/id_rsa.pub
+          touch ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa && echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+      - run: |
+          ssh granty29@granty29.vergil.u.washington.edu "./prepush.sh"
+          rsync -aimPz public_html/ granty29@granty29.vergil.u.washington.edu:~/public_html/
+          ssh granty29@granty29.vergil.u.washington.edu "./postpush.sh"
       - run: rm -rf ~/.ssh
         if: always()
